@@ -12,3 +12,7 @@ sysinfo = "0.30"
 
 [dev-dependencies]
 tokio-test = "0.4"
+
+[lib]
+name = "pheno_proc_core"
+path = "src/lib.rs"
