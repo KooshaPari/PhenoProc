@@ -8,5 +8,6 @@ description = "Project registry for Phenotype"
 
 [dependencies]
 serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]

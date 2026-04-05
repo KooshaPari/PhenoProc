@@ -93,7 +93,7 @@ pub fn from_env<T: DeserializeOwned>(prefix: &str) -> Result<T> {
 }
 
 /// Configuration loader with builder pattern
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ConfigLoader<T: DeserializeOwned> {
     file_path: Option<String>,
     env_prefix: Option<String>,
@@ -103,7 +103,11 @@ pub struct ConfigLoader<T: DeserializeOwned> {
 impl<T: DeserializeOwned> ConfigLoader<T> {
     /// Create a new config loader
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            file_path: None,
+            env_prefix: None,
+            _phantom: std::marker::PhantomData,
+        }
     }
     
     /// Set file path to load from

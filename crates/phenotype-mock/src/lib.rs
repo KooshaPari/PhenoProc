@@ -63,7 +63,7 @@ pub struct Mock<T, R> {
     context: MockContext,
 }
 
-impl<T: std::hash::Hash + Eq + Clone, R: Clone> Mock<T, R> {
+impl<T: std::hash::Hash + Eq + Clone + std::fmt::Debug, R: Clone> Mock<T, R> {
     /// Create a new mock
     pub fn new() -> Self {
         Self {
@@ -108,7 +108,7 @@ impl<T: std::hash::Hash + Eq + Clone, R: Clone> Mock<T, R> {
     }
 }
 
-impl<T: std::hash::Hash + Eq + Clone, R: Clone> Default for Mock<T, R> {
+impl<T: std::hash::Hash + Eq + Clone + std::fmt::Debug, R: Clone> Default for Mock<T, R> {
     fn default() -> Self {
         Self::new()
     }
