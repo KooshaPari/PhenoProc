@@ -1,5 +1,6 @@
 # pheno-llm
 
-LLM routing extracted from phenoSDK.
+Extracted from phenoSDK/src/pheno/llm/
 
-Extracted: 2026-04-04
+Part of the PhenoProc AI infrastructure workspace.
+

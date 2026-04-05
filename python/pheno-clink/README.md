@@ -1,5 +1,6 @@
 # pheno-clink
 
-AI agent integrations extracted from phenoSDK.
+Extracted from phenoSDK/src/pheno/clink/
 
-Extracted: 2026-04-04
+Part of the PhenoProc AI infrastructure workspace.
+
