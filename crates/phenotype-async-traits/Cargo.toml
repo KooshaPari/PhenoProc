@@ -1,15 +1,16 @@
 [package]
 name = "phenotype-async-traits"
-version = "0.2.0"
-edition = "2021"
-license = "MIT"
-description = "Async traits for phenotype ecosystem"
-
-[lib]
-path = "src/lib.rs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [dependencies]
-async-trait = "0.1"
+async-trait = { workspace = true }
+futures = { workspace = true }
+pin-project = "1.1"
+rand = { workspace = true }
+tokio = { workspace = true, features = ["time", "sync", "rt"] }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["full"] }

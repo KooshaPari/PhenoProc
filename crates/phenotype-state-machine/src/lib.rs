@@ -1,296 +1,223 @@
-//! Generic finite state machine with transition guards and callbacks.
+//! Hierarchical State Machine implementation for the phenotype ecosystem.
+//!
+//! Provides a flexible, type-safe state machine with support for hierarchical states,
+//! history tracking, and async event handling.
+//!
+//! # Example
+//!
+//! ```rust
+//! use phenotype_state_machine::{State, StateMachine, Handler, HandlerResult};
+//! use std::fmt;
+//!
+//! #[derive(Debug, Clone)]
+//! enum MyState {
+//!     Idle,
+//!     Running,
+//!     Stopped,
+//! }
+//!
+//! impl State for MyState {
+//!     type Id = String;
+//!
+//!     fn id(&self) -> Self::Id {
+//!         match self {
+//!             MyState::Idle => "idle".to_string(),
+//!             MyState::Running => "running".to_string(),
+//!             MyState::Stopped => "stopped".to_string(),
+//!         }
+//!     }
+//!
+//!     fn validate_transition(&self, to: &Self) -> Result<(), String> {
+//!         match (self, to) {
+//!             (MyState::Idle, MyState::Running) => Ok(()),
+//!             (MyState::Running, MyState::Stopped) => Ok(()),
+//!             (MyState::Stopped, MyState::Idle) => Ok(()),
+//!             _ => Err("Invalid transition".to_string()),
+//!         }
+//!     }
+//!
+//!     fn on_enter(&self) {
+//!         println!("Entering state: {:?}", self);
+//!     }
+//!
+//!     fn on_exit(&self) {
+//!         println!("Exiting state: {:?}", self);
+//!     }
+//! }
+//! ```
 
 use std::collections::HashMap;
-use std::fmt;
-use std::sync::{Arc, RwLock};
-use thiserror::Error;
+use std::fmt::Debug;
+use std::hash::Hash;
 
-/// Callback type for state enter/exit hooks.
-type StateCallback = Arc<dyn Fn(&str) + Send + Sync>;
+pub mod models;
 
-/// Guard function type for conditional transitions.
-type TransitionGuard = Box<dyn Fn(&str, &str) -> bool + Send + Sync>;
+pub use models::*;
 
-/// Errors that can occur during state machine operations.
-#[derive(Debug, Clone, Error)]
-pub enum StateMachineError {
-    #[error("invalid transition: no transition from '{from}' on event '{event}'")]
-    InvalidTransition { from: String, event: String },
+/// Core trait for state machine states
+pub trait State: Debug + Clone + Send + Sync + 'static {
+    /// State identifier type
+    type Id: Debug + Clone + Eq + Hash + Send + Sync;
 
-    #[error("transition from '{from}' on '{event}' rejected by guard")]
-    GuardRejected { from: String, event: String },
+    /// Get the state identifier
+    fn id(&self) -> Self::Id;
 
-    #[error("unknown state: '{0}'")]
-    UnknownState(String),
+    /// Validate transition from this state to another
+    fn validate_transition(&self, to: &Self) -> Result<(), String>;
 
-    #[error("builder error: {0}")]
-    BuildError(String),
+    /// Called when entering this state
+    fn on_enter(&self);
+
+    /// Called when exiting this state
+    fn on_exit(&self);
 }
 
-/// Result type for state machine operations.
-pub type Result<T> = std::result::Result<T, StateMachineError>;
+/// Handler trait for processing events and triggering state transitions
+pub trait Handler: Debug + Send + Sync + 'static {
+    /// The state type this handler works with
+    type State: State;
 
-/// A transition definition with optional guard.
-struct Transition {
-    to: String,
-    guard: Option<TransitionGuard>,
+    /// Handle an event and return the resulting handler result
+    fn handle(&self, state: &Self::State, event: Event) -> HandlerResult<Self::State>;
 }
 
-/// A generic finite state machine.
-pub struct StateMachine {
-    current: RwLock<String>,
-    transitions: HashMap<(String, String), Transition>,
-    on_enter: HashMap<String, Vec<StateCallback>>,
-    on_exit: HashMap<String, Vec<StateCallback>>,
+/// Event type for state machine interactions
+#[derive(Debug, Clone)]
+pub struct Event {
+    /// Event type identifier
+    pub event_type: String,
+    /// Event payload data
+    pub payload: Option<serde_json::Value>,
 }
 
-impl Default for StateMachine {
+/// Result type for handler operations
+#[derive(Debug)]
+pub enum HandlerResult<S: State> {
+    /// Stay in current state
+    Stay,
+    /// Transition to new state
+    Transition(S),
+    /// Exit the state machine
+    Exit,
+}
+
+/// Hierarchical state machine supporting nested states and history
+#[derive(Debug)]
+pub struct HierarchicalStateMachine<S: State> {
+    current: S,
+    parent: Option<Box<Self>>,
+    children: HashMap<S::Id, Box<Self>>,
+    handler: Option<Box<dyn Handler<State = S>>>,
+    history: Vec<S>,
+}
+
+impl<S: State + Default> Default for HierarchicalStateMachine<S> {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl StateMachine {
-    /// Create a new empty state machine.
-    pub fn new() -> Self {
         Self {
-            current: RwLock::new(String::new()),
-            transitions: HashMap::new(),
-            on_enter: HashMap::new(),
-            on_exit: HashMap::new(),
+            current: S::default(),
+            parent: None,
+            children: HashMap::new(),
+            handler: None,
+            history: Vec::new(),
         }
-    }
-
-    /// Get the current state.
-    pub fn current(&self) -> String {
-        self.current.read().unwrap().clone()
-    }
-
-    /// Send an event to the state machine.
-    pub fn send(&self, event: &str) -> Result<String> {
-        let mut current = self.current.write().unwrap();
-        let key = (current.clone(), event.to_string());
-
-        let transition =
-            self.transitions
-                .get(&key)
-                .ok_or_else(|| StateMachineError::InvalidTransition {
-                    from: current.clone(),
-                    event: event.to_string(),
-                })?;
-
-        if let Some(guard) = &transition.guard {
-            if !guard(&current, event) {
-                return Err(StateMachineError::GuardRejected {
-                    from: current.clone(),
-                    event: event.to_string(),
-                });
-            }
-        }
-
-        // Fire on_exit callbacks for current state.
-        if let Some(cbs) = self.on_exit.get(current.as_str()) {
-            for cb in cbs {
-                cb(&current);
-            }
-        }
-
-        // Perform the transition.
-        let new_state = transition.to.clone();
-        *current = new_state.clone();
-        drop(current);
-
-        // Fire on_enter callbacks for new state.
-        if let Some(cbs) = self.on_enter.get(new_state.as_str()) {
-            for cb in cbs {
-                cb(&new_state);
-            }
-        }
-
-        Ok(new_state)
-    }
-
-    /// Check if an event can be sent from the current state.
-    pub fn can_send(&self, event: &str) -> bool {
-        let current = self.current.read().unwrap();
-        let key = (current.clone(), event.to_string());
-        if let Some(transition) = self.transitions.get(&key) {
-            if let Some(guard) = &transition.guard {
-                return guard(&current, event);
-            }
-            return true;
-        }
-        false
-    }
-
-    /// List all events available from the current state.
-    pub fn available_events(&self) -> Vec<String> {
-        let current = self.current.read().unwrap();
-        self.transitions
-            .iter()
-            .filter(|((from, _), _)| from == &*current)
-            .map(|((_, event), _)| event.clone())
-            .collect()
-    }
-
-    /// Check if in a specific state.
-    pub fn is_in(&self, state: &str) -> bool {
-        self.current() == state
     }
 }
 
-impl fmt::Debug for StateMachine {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("StateMachine")
-            .field("current", &self.current())
-            .field("states", &self.transitions.len())
-            .finish()
-    }
-}
-
-/// Builder for constructing state machines.
-pub struct StateMachineBuilder {
-    initial: String,
-    transitions: HashMap<(String, String), Transition>,
-    on_enter: HashMap<String, Vec<StateCallback>>,
-    on_exit: HashMap<String, Vec<StateCallback>>,
-}
-
-impl StateMachineBuilder {
-    /// Create a new builder with the specified initial state.
-    pub fn new(initial: &str) -> Self {
-        Self {
-            initial: initial.to_string(),
-            transitions: HashMap::new(),
-            on_enter: HashMap::new(),
-            on_exit: HashMap::new(),
+impl<S: State> HierarchicalStateMachine<S> {
+    /// Create new hierarchical state machine
+    pub fn new(initial: S) -> Self {
+        HierarchicalStateMachine {
+            current: initial,
+            parent: None,
+            children: HashMap::new(),
+            handler: None,
+            history: Vec::new(),
         }
     }
 
-    /// Add a transition from one state to another on an event.
-    pub fn transition(mut self, from: &str, event: &str, to: &str) -> Self {
-        self.transitions.insert(
-            (from.to_string(), event.to_string()),
-            Transition {
-                to: to.to_string(),
-                guard: None,
-            },
-        );
-        self
+    /// Add child state machine
+    pub fn add_child(&mut self, id: S::Id, child: Self) {
+        self.children.insert(id, Box::new(child));
     }
 
-    /// Add a guarded transition.
-    pub fn guarded_transition<F>(
-        mut self,
-        from: &str,
-        event: &str,
-        to: &str,
-        guard: F,
-    ) -> Self
-    where
-        F: Fn(&str, &str) -> bool + Send + Sync + 'static,
-    {
-        self.transitions.insert(
-            (from.to_string(), event.to_string()),
-            Transition {
-                to: to.to_string(),
-                guard: Some(Box::new(guard)),
-            },
-        );
-        self
+    /// Get parent reference
+    pub fn parent(&self) -> Option<&Self> {
+        self.parent.as_ref().map(|b| b.as_ref())
     }
 
-    /// Add an on-enter callback for a state.
-    pub fn on_enter<F>(mut self, state: &str, callback: F) -> Self
-    where
-        F: Fn(&str) + Send + Sync + 'static,
-    {
-        self.on_enter
-            .entry(state.to_string())
-            .or_default()
-            .push(Arc::new(callback));
-        self
+    /// Get mutable parent reference
+    pub fn parent_mut(&mut self) -> Option<&mut Self> {
+        self.parent.as_mut().map(|b| b.as_mut())
     }
 
-    /// Add an on-exit callback for a state.
-    pub fn on_exit<F>(mut self, state: &str, callback: F) -> Self
-    where
-        F: Fn(&str) + Send + Sync + 'static,
-    {
-        self.on_exit
-            .entry(state.to_string())
-            .or_default()
-            .push(Arc::new(callback));
-        self
+    /// Get current state
+    pub fn current(&self) -> &S {
+        &self.current
     }
 
-    /// Build the state machine.
-    pub fn build(self) -> Result<StateMachine> {
-        if self.initial.is_empty() {
-            return Err(StateMachineError::BuildError(
-                "Initial state cannot be empty".to_string(),
-            ));
+    /// Get handler reference
+    pub fn handler(&self) -> Option<&dyn Handler<State = S>> {
+        self.handler.as_ref().map(|b| b.as_ref())
+    }
+
+    /// Transition to new state
+    pub fn transition(&mut self, new_state: S) -> Result<(), String> {
+        self.current.validate_transition(&new_state)?;
+        self.current.on_exit();
+        self.history.push(self.current.clone());
+        new_state.on_enter();
+        self.current = new_state;
+        Ok(())
+    }
+
+    /// Process an event
+    pub fn process(&mut self, event: Event) -> HandlerResult<S> {
+        if let Some(handler) = &self.handler {
+            handler.handle(&self.current, event)
+        } else {
+            HandlerResult::Stay
         }
+    }
 
-        let mut sm = StateMachine::new();
-        *sm.current.write().unwrap() = self.initial;
-        sm.transitions = self.transitions;
-        sm.on_enter = self.on_enter;
-        sm.on_exit = self.on_exit;
-        Ok(sm)
+    /// Get history
+    pub fn history(&self) -> &[S] {
+        &self.history
+    }
+
+    /// Reset to initial state
+    pub fn reset(&mut self, initial: S) {
+        self.current = initial;
+        self.history.clear();
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
 
-    fn traffic_light() -> StateMachine {
-        StateMachineBuilder::new("red")
-            .transition("red", "next", "green")
-            .transition("green", "next", "yellow")
-            .transition("yellow", "next", "red")
-            .build()
-            .unwrap()
+    #[derive(Debug, Clone, Default)]
+    struct TestState {
+        value: u32,
+    }
+
+    impl State for TestState {
+        type Id = String;
+
+        fn state_id(&self) -> Self::Id {
+            format!("state_{}", self.value)
+        }
+
+        fn validate_transition(&self, _to: &Self) -> Result<(), String> {
+            Ok(())
+        }
+
+        fn on_enter(&self) {}
+        fn on_exit(&self) {}
     }
 
     #[test]
-    fn test_basic_transitions() {
-        let sm = traffic_light();
-        assert_eq!(sm.current(), "red");
-        sm.send("next").unwrap();
-        assert_eq!(sm.current(), "green");
-        sm.send("next").unwrap();
-        assert_eq!(sm.current(), "yellow");
-    }
-
-    #[test]
-    fn test_invalid_transition() {
-        let sm = traffic_light();
-        let err = sm.send("invalid").unwrap_err();
-        assert!(matches!(err, StateMachineError::InvalidTransition { .. }));
-    }
-
-    #[test]
-    fn test_can_send() {
-        let sm = traffic_light();
-        assert!(sm.can_send("next"));
-        assert!(!sm.can_send("invalid"));
-    }
-
-    #[test]
-    fn test_on_enter_callback() {
-        let count = Arc::new(AtomicUsize::new(0));
-        let c = count.clone();
-        let sm = StateMachineBuilder::new("a")
-            .transition("a", "go", "b")
-            .on_enter("b", move |_| {
-                c.fetch_add(1, Ordering::SeqCst);
-            })
-            .build()
-            .unwrap();
-        sm.send("go").unwrap();
-        assert_eq!(count.load(Ordering::SeqCst), 1);
+    fn test_hierarchical_state_machine() {
+        let sm = HierarchicalStateMachine::new(TestState { value: 0 });
+        assert_eq!(sm.current().value, 0);
     }
 }

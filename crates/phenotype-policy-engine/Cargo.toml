@@ -1,15 +1,24 @@
 [package]
 name = "phenotype-policy-engine"
-version = "0.2.0"
-edition = "2021"
-license = "MIT"
-description = "Policy engine for Phenotype"
-repository = "https://github.com/KooshaPari/phenotype-infrakit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-thiserror = { workspace = true }
+phenotype-error-core = { path = "../phenotype-error-core" }
+phenotype-content-hash = { path = "../phenotype-content-hash" }
+phenotype-serde-adapters = { path = "../phenotype-serde-adapters" }
+phenotype-time = { path = "../phenotype-time" }
 
-[dev-dependencies]
-tokio-test = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+jsonwebtoken = "9.3.0"
+regex = { workspace = true }
+once_cell = { workspace = true }
+dashmap = "6.1"

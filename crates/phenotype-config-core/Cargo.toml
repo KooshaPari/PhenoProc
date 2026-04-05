@@ -1,17 +1,21 @@
 [package]
 name = "phenotype-config-core"
-version = "0.2.0"
-edition = "2021"
-license = "MIT"
-description = "Core configuration management for Phenotype"
-repository = "https://github.com/KooshaPari/phenotype-infrakit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [dependencies]
+phenotype-serde-adapters = { path = "../phenotype-serde-adapters" }
+phenotype-validation = { path = "../phenotype-validation" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-thiserror = { workspace = true }
-toml = { workspace = true }
 serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+once_cell = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true, features = ["time", "rt"] }
 
 [dev-dependencies]
-tokio-test = { workspace = true }
+tempfile = "3.14"

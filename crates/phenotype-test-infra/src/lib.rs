@@ -1,152 +1,161 @@
-//! Test infrastructure for Phenotype
+//! Phenotype Test Infra - Test infrastructure and utilities
 //!
-//! Provides test runners, fixtures, and test utilities.
+//! Provides test servers, database setup, and integration test helpers.
 
-pub mod fixtures;
-pub mod runner;
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-/// Test result
-#[derive(Debug, Clone)]
-pub struct TestResult {
-    pub name: String,
-    pub passed: bool,
-    pub duration_ms: u64,
-    pub message: Option<String>,
+use std::net::SocketAddr;
+
+use tempfile::TempDir;
+use tokio::net::TcpListener;
+use tracing::info;
+
+/// Test server for integration tests
+pub struct TestServer {
+    pub addr: SocketAddr,
+    pub base_url: String,
+    _temp_dir: TempDir,
 }
 
-/// Test case trait
-pub trait TestCase: Send + Sync {
-    /// Run the test
-    fn run(&self) -> TestResult;
-    
-    /// Get test name
-    fn name(&self) -> &str;
+impl TestServer {
+    pub async fn new() -> std::io::Result<Self> {
+        let temp_dir = TempDir::new()?;
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let addr = listener.local_addr()?;
+        let base_url = format!("http://{}", addr);
+
+        info!("Test server started at {}", base_url);
+
+        Ok(Self {
+            addr,
+            base_url,
+            _temp_dir: temp_dir,
+        })
+    }
+
+    pub fn url(&self, path: &str) -> String {
+        format!("{}{}", self.base_url, path)
+    }
 }
 
-/// Test suite
-#[derive(Debug, Default)]
-pub struct TestSuite {
-    name: String,
-    tests: Vec<Box<dyn TestCase>>,
+/// Test database wrapper
+pub struct TestDatabase {
+    pub connection_string: String,
+    _temp_dir: TempDir,
 }
 
-impl TestSuite {
-    /// Create a new test suite
-    pub fn new(name: impl Into<String>) -> Self {
+impl TestDatabase {
+    pub fn new() -> std::io::Result<Self> {
+        let temp_dir = TempDir::new()?;
+        let db_path = temp_dir.path().join("test.db");
+        let connection_string = format!("sqlite:{}", db_path.display());
+
+        Ok(Self {
+            connection_string,
+            _temp_dir: temp_dir,
+        })
+    }
+
+    pub async fn setup(&self) -> Result<(), Box<dyn std::error::Error>> {
+        // Initialize schema
+        info!("Setting up test database at {}", self.connection_string);
+        Ok(())
+    }
+
+    pub async fn teardown(&self) -> Result<(), Box<dyn std::error::Error>> {
+        info!("Tearing down test database");
+        Ok(())
+    }
+}
+
+/// Test context holding all test resources
+pub struct TestContext {
+    pub server: Option<TestServer>,
+    pub database: Option<TestDatabase>,
+    pub temp_dir: TempDir,
+}
+
+impl TestContext {
+    pub fn new() -> std::io::Result<Self> {
+        Ok(Self {
+            server: None,
+            database: None,
+            temp_dir: TempDir::new()?,
+        })
+    }
+
+    pub async fn with_server(mut self) -> std::io::Result<Self> {
+        self.server = Some(TestServer::new().await?);
+        Ok(self)
+    }
+
+    pub fn with_database(mut self) -> std::io::Result<Self> {
+        self.database = Some(TestDatabase::new()?);
+        Ok(self)
+    }
+}
+
+/// Port allocator for tests
+pub struct PortAllocator {
+    base_port: u16,
+    current: u16,
+}
+
+impl PortAllocator {
+    pub fn new(base_port: u16) -> Self {
         Self {
-            name: name.into(),
-            tests: Vec::new(),
+            base_port,
+            current: base_port,
         }
     }
-    
-    /// Add a test case
-    pub fn add_test(&mut self, test: Box<dyn TestCase>) {
-        self.tests.push(test);
+
+    pub fn next(&mut self) -> u16 {
+        let port = self.current;
+        self.current += 1;
+        port
     }
-    
-    /// Run all tests
-    pub fn run(&self) -> Vec<TestResult> {
-        self.tests.iter().map(|t| t.run()).collect()
-    }
-    
-    /// Get test count
-    pub fn count(&self) -> usize {
-        self.tests.len()
-    }
-    
-    /// Get suite name
-    pub fn name(&self) -> &str {
-        &self.name
+
+    pub fn reset(&mut self) {
+        self.current = self.base_port;
     }
 }
 
-/// Test reporter
-pub trait TestReporter: Send + Sync {
-    /// Report a test result
-    fn report(&self, result: &TestResult);
-    
-    /// Report summary
-    fn summary(&self, passed: usize, failed: usize, duration_ms: u64);
+/// Test environment setup
+pub fn setup_test_env() {
+    // Initialize tracing for tests
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter("debug")
+        .try_init();
 }
 
-/// Console test reporter
-#[derive(Debug)]
-pub struct ConsoleReporter;
-
-impl ConsoleReporter {
-    /// Create a new console reporter
-    pub fn new() -> Self {
-        Self
-    }
+/// Assert that a future completes within a timeout
+pub async fn assert_timeout<F, Fut>(f: F, timeout_ms: u64)
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future,
+{
+    let timeout = tokio::time::Duration::from_millis(timeout_ms);
+    let result = tokio::time::timeout(timeout, f()).await;
+    assert!(result.is_ok(), "Operation timed out after {}ms", timeout_ms);
 }
 
-impl Default for ConsoleReporter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TestReporter for ConsoleReporter {
-    fn report(&self, result: &TestResult) {
-        let status = if result.passed { "PASS" } else { "FAIL" };
-        println!("[{}] {} ({}ms)", status, result.name, result.duration_ms);
-        if let Some(ref msg) = result.message {
-            println!("  {}", msg);
-        }
-    }
-    
-    fn summary(&self, passed: usize, failed: usize, duration_ms: u64) {
-        println!("\n========================================");
-        println!("Tests: {} passed, {} failed", passed, failed);
-        println!("Duration: {}ms", duration_ms);
-        println!("========================================");
-    }
-}
-
-/// Test harness
-pub struct TestHarness {
-    suites: Vec<TestSuite>,
-    reporter: Box<dyn TestReporter>,
-}
-
-impl TestHarness {
-    /// Create a new test harness
-    pub fn new(reporter: Box<dyn TestReporter>) -> Self {
-        Self {
-            suites: Vec::new(),
-            reporter,
-        }
-    }
-    
-    /// Add a test suite
-    pub fn add_suite(&mut self, suite: TestSuite) {
-        self.suites.push(suite);
-    }
-    
-    /// Run all test suites
-    pub fn run(&self) -> bool {
-        let start = std::time::Instant::now();
-        let mut total_passed = 0;
-        let mut total_failed = 0;
-        
-        for suite in &self.suites {
-            println!("\nRunning suite: {}", suite.name());
-            let results = suite.run();
-            
-            for result in &results {
-                self.reporter.report(result);
-                if result.passed {
-                    total_passed += 1;
-                } else {
-                    total_failed += 1;
-                }
+/// Retry an async operation with exponential backoff
+pub async fn retry_async<F, Fut, T, E>(mut f: F, max_attempts: u32) -> Result<T, E>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<T, E>>,
+{
+    let mut attempts = 0;
+    loop {
+        match f().await {
+            Ok(result) => return Ok(result),
+            Err(e) if attempts < max_attempts => {
+                attempts += 1;
+                let delay = std::time::Duration::from_millis(100 * 2_u64.pow(attempts));
+                tokio::time::sleep(delay).await;
             }
+            Err(e) => return Err(e),
         }
-        
-        let duration = start.elapsed().as_millis() as u64;
-        self.reporter.summary(total_passed, total_failed, duration);
-        
-        total_failed == 0
     }
 }
 
@@ -154,29 +163,12 @@ impl TestHarness {
 mod tests {
     use super::*;
 
-    struct DummyTest {
-        name: String,
-    }
-
-    impl TestCase for DummyTest {
-        fn run(&self) -> TestResult {
-            TestResult {
-                name: self.name.clone(),
-                passed: true,
-                duration_ms: 0,
-                message: None,
-            }
-        }
-        
-        fn name(&self) -> &str {
-            &self.name
-        }
-    }
-
-    #[test]
-    fn test_suite() {
-        let mut suite = TestSuite::new("test");
-        suite.add_test(Box::new(DummyTest { name: "t1".to_string() }));
-        assert_eq!(suite.count(), 1);
+    #[tokio::test]
+    async fn test_port_allocator() {
+        let mut allocator = PortAllocator::new(10000);
+        assert_eq!(allocator.next(), 10000);
+        assert_eq!(allocator.next(), 10001);
+        allocator.reset();
+        assert_eq!(allocator.next(), 10000);
     }
 }

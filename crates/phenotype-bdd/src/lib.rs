@@ -1,15 +1,14 @@
-//! BDD Testing Utilities
+//! Behavior-Driven Development (BDD) testing utilities for Phenotype
 //!
-//! Provides given-when-then style testing for Phenotype projects.
+//! Provides types and traits for writing Given-When-Then style tests.
 
-pub mod given;
-pub mod then;
-pub mod when;
-
-pub use given::Given;
-pub use then::Then;
-pub use when::When;
-
-pub mod prelude {
-    pub use crate::{Given, Then, When};
+/// Step types in BDD scenarios
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StepType {
+    /// Setup/precondition step
+    Given,
+    /// Action step
+    When,
+    /// Assertion step
+    Then,
 }

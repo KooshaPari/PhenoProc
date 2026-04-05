@@ -1,0 +1,31 @@
+[package]
+name = "phenotype-compliance-scanner"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Documentation and governance compliance scanning"
+
+[features]
+default = ["async-scan", "health-integration"]
+async-scan = ["dep:tokio", "dep:async-trait", "dep:futures-util"]
+health-integration = ["dep:phenotype-health"]
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+thiserror = "2.0"
+tracing = "0.1"
+
+# Optional dependencies
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "fs"], optional = true }
+async-trait = { version = "0.1", optional = true }
+futures-util = { version = "0.3", optional = true }
+phenotype-health = { path = "../phenotype-health", optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["rt", "macros"] }

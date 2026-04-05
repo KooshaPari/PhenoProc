@@ -1,15 +1,16 @@
 [package]
 name = "phenotype-errors"
-version = "0.2.0"
-edition = "2021"
-license = "MIT"
-description = "Error handling for Phenotype"
-repository = "https://github.com/KooshaPari/phenotype-infrakit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [dependencies]
-phenotype-error-core = { workspace = true }
+phenotype-error-core = { path = "../phenotype-error-core" }
+phenotype-error-macros = { path = "../phenotype-error-macros" }
 thiserror = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
-tokio-test = { workspace = true }

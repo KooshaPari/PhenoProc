@@ -1,121 +1,79 @@
-//! String utilities for Phenotype
+//! Phenotype string utilities
 //!
-//! Provides string manipulation, compression, normalization, and parsing utilities.
+//! Common string manipulation helpers for the Phenotype ecosystem.
 
-use thiserror::Error;
-
-pub mod compression;
-pub mod join;
-pub mod normalization;
-pub mod parse;
-pub mod sanitize;
-
-/// String utility errors
-#[derive(Debug, Error)]
-pub enum Error {
-    /// Invalid string operation
-    #[error("Invalid: {0}")]
-    Invalid(String),
-    /// Compression error
-    #[error("Compression error: {0}")]
-    Compression(String),
-    /// Decompression error
-    #[error("Decompression error: {0}")]
-    Decompression(String),
-    /// Normalization error
-    #[error("Normalization error: {0}")]
-    Normalization(String),
-    /// Parse error
-    #[error("Parse error: {0}")]
-    Parse(String),
-}
-
-/// Result type for string operations
-pub type Result<T> = std::result::Result<T, Error>;
-
-/// Truncate a string to a maximum length with ellipsis
-///
-/// # Examples
-///
-/// ```
-/// use phenotype_string::truncate;
-///
-/// let s = "Hello, World!";
-/// assert_eq!(truncate(s, 5), "He...");
-/// ```
+/// Truncate a string to a maximum length, adding ellipsis if truncated
 pub fn truncate(s: &str, max_len: usize) -> String {
-    if s.len() <= max_len {
+    if s.chars().count() <= max_len {
         s.to_string()
-    } else if max_len <= 3 {
-        s[..max_len].to_string()
     } else {
-        format!("{}...", &s[..max_len - 3])
+        let truncated: String = s.chars().take(max_len.saturating_sub(3)).collect();
+        format!("{}...", truncated)
     }
 }
 
-/// Reverse a string (handles Unicode correctly)
-pub fn reverse(s: &str) -> String {
-    s.chars().rev().collect()
-}
-
-/// Count characters (not bytes) in a string
-pub fn char_count(s: &str) -> usize {
-    s.chars().count()
-}
-
-/// Check if string is empty or whitespace only
-pub fn is_blank(s: &str) -> bool {
-    s.trim().is_empty()
-}
-
-/// Split string into words
-pub fn words(s: &str) -> Vec<&str> {
-    s.split_whitespace().collect()
-}
-
-/// Convert to snake_case
+/// Convert a string to snake_case
 pub fn to_snake_case(s: &str) -> String {
     let mut result = String::new();
-    let mut prev_lower = false;
-    
-    for c in s.chars() {
-        if c.is_uppercase() {
-            if prev_lower {
+    let mut prev_is_lower = false;
+
+    for ch in s.chars() {
+        if ch.is_uppercase() {
+            if prev_is_lower {
                 result.push('_');
             }
-            result.push(c.to_lowercase().next().unwrap_or(c));
-            prev_lower = false;
-        } else if c.is_alphanumeric() {
-            result.push(c);
-            prev_lower = c.is_lowercase();
+            result.push(ch.to_ascii_lowercase());
+            prev_is_lower = false;
         } else {
-            result.push('_');
-            prev_lower = false;
+            result.push(ch);
+            prev_is_lower = ch.is_lowercase();
         }
     }
-    
-    result.trim_matches('_').to_string()
+
+    result
 }
 
-/// Convert to camelCase
+/// Convert a string to camelCase
 pub fn to_camel_case(s: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
-    
-    for c in s.chars() {
-        if c.is_alphanumeric() {
-            if capitalize_next {
-                result.push(c.to_uppercase().next().unwrap_or(c));
-                capitalize_next = false;
-            } else {
-                result.push(c.to_lowercase().next().unwrap_or(c));
-            }
-        } else {
+
+    for ch in s.chars() {
+        if ch == '_' || ch == '-' || ch == ' ' {
             capitalize_next = true;
+        } else if capitalize_next {
+            result.push(ch.to_ascii_uppercase());
+            capitalize_next = false;
+        } else {
+            result.push(ch);
         }
     }
-    
+
     result
+}
+
+/// Check if a string is a valid identifier (alphanumeric + underscore, starts with letter)
+pub fn is_valid_identifier(s: &str) -> bool {
+    if s.is_empty() {
+        return false;
+    }
+
+    let mut chars = s.chars();
+    let first = chars.next().unwrap();
+    if !first.is_alphabetic() && first != '_' {
+        return false;
+    }
+
+    chars.all(|c| c.is_alphanumeric() || c == '_')
+}
+
+/// Indent each line of a string by the given number of spaces
+pub fn indent(s: &str, spaces: usize) -> String {
+    let prefix = " ".repeat(spaces);
+    s.lines()
+        .map(|line| format!("{}{}", prefix, line))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]
@@ -123,46 +81,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_truncate() {
-        assert_eq!(truncate("Hello", 10), "Hello");
-        assert_eq!(truncate("Hello, World!", 8), "Hello...");
-        assert_eq!(truncate("Hi", 2), "Hi");
+    fn test_truncate_short_string() {
+        assert_eq!(truncate("hello", 10), "hello");
     }
 
     #[test]
-    fn test_reverse() {
-        assert_eq!(reverse("Hello"), "olleH");
-        assert_eq!(reverse("123"), "321");
+    fn test_truncate_long_string() {
+        // max_len=10, we take 7 chars + "..." = 10 chars total
+        assert_eq!(truncate("hello world this is long", 10), "hello w...");
     }
 
     #[test]
-    fn test_char_count() {
-        assert_eq!(char_count("Hello"), 5);
-        assert_eq!(char_count(""), 0);
-    }
-
-    #[test]
-    fn test_is_blank() {
-        assert!(is_blank(""));
-        assert!(is_blank("   "));
-        assert!(!is_blank("Hello"));
-    }
-
-    #[test]
-    fn test_words() {
-        assert_eq!(words("Hello World"), vec!["Hello", "World"]);
-        assert_eq!(words("one  two"), vec!["one", "two"]);
-    }
-
-    #[test]
-    fn test_snake_case() {
+    fn test_to_snake_case() {
         assert_eq!(to_snake_case("HelloWorld"), "hello_world");
-        assert_eq!(to_snake_case("hello-world"), "hello_world");
+        assert_eq!(to_snake_case("Hello"), "hello");
     }
 
     #[test]
-    fn test_camel_case() {
+    fn test_to_camel_case() {
         assert_eq!(to_camel_case("hello_world"), "helloWorld");
         assert_eq!(to_camel_case("hello-world"), "helloWorld");
+    }
+
+    #[test]
+    fn test_is_valid_identifier() {
+        assert!(is_valid_identifier("hello"));
+        assert!(is_valid_identifier("_hello"));
+        assert!(is_valid_identifier("hello_world"));
+        assert!(!is_valid_identifier("123"));
+        assert!(!is_valid_identifier(""));
+    }
+
+    #[test]
+    fn test_indent() {
+        assert_eq!(indent("line1\nline2", 2), "  line1\n  line2");
     }
 }

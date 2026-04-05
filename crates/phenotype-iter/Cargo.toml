@@ -1,0 +1,16 @@
+[package]
+name = "phenotype-iter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[features]
+default = []
+parallel = ["rayon"]
+
+[dependencies]
+rayon = { version = "1.10", optional = true }
+
+[lib]

@@ -2,14 +2,23 @@
 name = "phenotype-error-core"
 version = "0.2.0"
 edition = "2021"
+description = "Core error types for the Phenotype ecosystem"
 license = "MIT"
-description = "Core error types for Phenotype"
-repository = "https://github.com/KooshaPari/phenotype-infrakit"
 
 [dependencies]
+chrono = { workspace = true, optional = true }
 thiserror = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-anyhow = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
 
 [dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros"] }
+
+[features]
+default = ["thiserror-support"]
+thiserror-support = []
+serde-support = []
+anyhow-support = ["anyhow"]
+tracing-support = ["tracing"]

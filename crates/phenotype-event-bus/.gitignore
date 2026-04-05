@@ -1,0 +1,9 @@
+# Cache directories
+c-ct/
+target/
+
+# Cargo lock file (for libraries)
+Cargo.lock
+
+# Log files
+*.log
