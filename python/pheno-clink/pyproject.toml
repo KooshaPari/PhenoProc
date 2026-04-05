@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pheno-clink"
+version = "0.1.0"
+description = "AI agent integrations for Codex, Claude, Gemini"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [{name = "Phenotype Contributors"}]
+dependencies = ["pydantic>=2.5.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "ruff>=0.1.0", "mypy>=1.0.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pheno_clink"]

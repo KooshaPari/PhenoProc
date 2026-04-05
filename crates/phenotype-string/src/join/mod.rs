@@ -2,7 +2,6 @@
 //!
 //! Provides efficient string concatenation
 
-use std::fmt::Write;
 
 /// Join strings with a separator
 pub fn join<T: AsRef<str>>(items: &[T], separator: &str) -> String {
