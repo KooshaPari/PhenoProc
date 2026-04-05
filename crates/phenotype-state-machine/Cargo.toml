@@ -1,14 +1,12 @@
 [package]
 name = "phenotype-state-machine"
-version = "0.2.0"
-edition = "2021"
-license = "MIT"
-description = "State machine framework for Phenotype"
-repository = "https://github.com/KooshaPari/phenotype-infrakit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Generic finite state machine for Phenotype"
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-tokio-test = { workspace = true }

@@ -14,6 +14,7 @@ pub enum SchemaValidationError {
 }
 
 /// Schema definition for validation
+#[derive(Clone, Debug)]
 pub struct Schema {
     fields: HashMap<String, FieldType>,
     required: Vec<String>,

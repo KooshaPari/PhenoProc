@@ -10,5 +10,6 @@ repository = "https://github.com/KooshaPari/phenotype-infrakit"
 thiserror = { workspace = true }
 zstd = { workspace = true }
 unicode-normalization = { workspace = true }
+regex = { workspace = true }
 
 [dev-dependencies]
