@@ -85,3 +85,18 @@ PhenoProc/
 - **[AgilePlus](../AgilePlus)** — Task/work scheduling via PhenoProc queues
 - **[PhenoPlugins](../PhenoPlugins)** — Plugin lifecycle management using process primitives
 - **[Tracera](../Tracera)** — Distributed tracing integration with proc monitoring
+
+## Sub-Projects & Modules
+
+This monorepo contains tightly integrated sub-projects for specialized process concerns:
+
+- **phenotype-validation/** — Schema validation and rule evaluation for process inputs/outputs
+- **phenotype-router-monitor/** — Request routing with circuit breaker patterns and latency instrumentation
+- **phenotype-colab-extensions/** — Event-driven inter-service coordination via event sourcing and replay
+- **phenotype-config-ts/** — Type-safe configuration bindings for TypeScript/JavaScript consumers
+- **phenotype-cli-core/** — Standard CLI utilities for process spawning and signal handling
+- **python/** — Python interoperability layer and bindings
+
+## License & Governance
+
+Licensed under Apache 2.0. See `LICENSE` in repository root. Governance, contribution guidelines, and agent operating contract in `CLAUDE.md` and `AGENTS.md`. Functional requirements and FR-to-test traceability in `docs/FUNCTIONAL_REQUIREMENTS.md`.
