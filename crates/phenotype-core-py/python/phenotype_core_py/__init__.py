@@ -13,7 +13,7 @@ except ImportError:
     # Fallback for development
     raise ImportError(
         "phenotype_core_py native module not found. "
-        "Build with: cd PhenoKit/rust/phenotype-core-py && maturin develop"
+        "Build with: cd PhenoProc/crates/phenotype-core-py && maturin develop"
     )
 
 __all__ = ["EntityId", "Config", "validate_entity"]

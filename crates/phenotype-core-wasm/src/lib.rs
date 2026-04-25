@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global allocator.
 #[cfg(feature = "wee_alloc")]
@@ -39,20 +39,17 @@ impl WasmEntityId {
 
     #[wasm_bindgen(js_name = toJSON)]
     pub fn to_json(&self) -> Result<String, JsValue> {
-        serde_json::to_string(self)
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+        serde_json::to_string(self).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen(js_name = fromJSON)]
     pub fn from_json(json: String) -> Result<WasmEntityId, JsValue> {
-        serde_json::from_str(&json)
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+        serde_json::from_str(&json).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
     #[wasm_bindgen(js_name = toObject)]
     pub fn to_object(&self) -> Result<JsValue, JsValue> {
-        serde_wasm_bindgen::to_value(self)
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+        serde_wasm_bindgen::to_value(self).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 }
 
@@ -91,13 +88,13 @@ pub fn validate_entity(id: String, namespace: String) -> bool {
 /// Batch validation for multiple entities
 #[wasm_bindgen(js_name = validateEntities)]
 pub fn validate_entities(entities: JsValue) -> Result<JsValue, JsValue> {
-    let entities: Vec<WasmEntityId> = serde_wasm_bindgen::from_value(entities)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    
-    let results: Vec<bool> = entities.iter()
+    let entities: Vec<WasmEntityId> =
+        serde_wasm_bindgen::from_value(entities).map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let results: Vec<bool> = entities
+        .iter()
         .map(|e| validate_entity(e.id.clone(), e.namespace.clone()))
         .collect();
-    
-    serde_wasm_bindgen::to_value(&results)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+
+    serde_wasm_bindgen::to_value(&results).map_err(|e| JsValue::from_str(&e.to_string()))
 }
