@@ -1,0 +1,20 @@
+[package]
+name = "phenotype-core-py"
+version = "0.1.0"
+edition = "2021"
+authors = ["Phenotype Contributors"]
+license = "MIT OR Apache-2.0"
+description = "Python bindings for phenotype-core via PyO3"
+
+[lib]
+name = "phenotype_core_py"
+crate-type = ["cdylib"]
+
+[dependencies]
+phenotype-core = { path = "../phenotype-core" }
+pyo3 = { version = "0.21", features = ["extension-module"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[build-dependencies]
+pyo3-build-config = "0.21"

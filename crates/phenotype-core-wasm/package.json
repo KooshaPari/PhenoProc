@@ -1,0 +1,23 @@
+{
+  "name": "@phenotype/core-wasm",
+  "version": "0.1.0",
+  "description": "WASM bindings for Phenotype Core",
+  "main": "pkg/phenotype_core_wasm.js",
+  "types": "pkg/phenotype_core_wasm.d.ts",
+  "files": [
+    "pkg"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target bundler --out-dir pkg",
+    "build:node": "wasm-pack build --target nodejs --out-dir pkg-node",
+    "build:web": "wasm-pack build --target web --out-dir pkg-web",
+    "test": "wasm-pack test --headless --firefox"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KooshaPari/PhenoKit.git"
+  },
+  "keywords": ["phenotype", "wasm", "rust", "typescript"],
+  "author": "Phenotype Contributors",
+  "license": "MIT OR Apache-2.0"
+}
