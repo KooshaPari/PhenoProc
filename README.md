@@ -97,6 +97,10 @@ This monorepo contains tightly integrated sub-projects for specialized process c
 - **phenotype-cli-core/** — Standard CLI utilities for process spawning and signal handling
 - **python/** — Python interoperability layer and bindings
 
-## License & Governance
+## License
 
-Licensed under Apache 2.0. See `LICENSE` in repository root. Governance, contribution guidelines, and agent operating contract in `CLAUDE.md` and `AGENTS.md`. Functional requirements and FR-to-test traceability in `docs/FUNCTIONAL_REQUIREMENTS.md`.
+MIT — see [LICENSE](./LICENSE).
+
+## Governance
+
+Governance, contribution guidelines, and agent operating contract in `CLAUDE.md` and `AGENTS.md`. Functional requirements and FR-to-test traceability in `docs/FUNCTIONAL_REQUIREMENTS.md`.
