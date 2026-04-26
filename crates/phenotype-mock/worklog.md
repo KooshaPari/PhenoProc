@@ -1,5 +1,7 @@
 # Worklog: phenotype-mock
 
+
+**Category: ARCHITECTURE**
 ## Date: 2026-04-02
 
 ### Summary
