@@ -1,7 +1,7 @@
 [project]
 name = "pheno-workflow"
 version = "0.1.0"
-description = "PhenoProc AI infrastructure module - extracted from phenoSDK"
+description = "Workflow orchestration, saga patterns, and declarative workflows for Phenotype ecosystem."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
