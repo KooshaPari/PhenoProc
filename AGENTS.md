@@ -1,13 +1,11 @@
 # AGENTS.md — PhenoProc
 
-- **Location:** /Users/kooshapari/CodeProjects
-
 ## Quick Links
 
 - **Local CLAUDE.md:** See `CLAUDE.md` in this repository for project-specific guidance
-- **Phenotype org governance:** `/Users/kooshapari/CodeProjects/Phenotype/repos/CLAUDE.md`
-- **Global agent guidance:** `~/.claude/AGENTS.md`
-- **AgilePlus work tracking:** `cd /repos/AgilePlus && agileplus <command>`
+- **Phenotype org governance:** Refer to parent `CLAUDE.md` in Phenotype organization
+- **Global agent guidance:** Refer to global `AGENTS.md` configuration
+- **AgilePlus work tracking:** Refer to AgilePlus repository for work tracking
 
 ## Key Workflows
 

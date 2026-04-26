@@ -1,23 +1,21 @@
 # CLAUDE.md — PhenoProc
 
 Extends parent governance. See the following for canonical definitions:
-- **Global baseline:** `~/.claude/CLAUDE.md`
-- **Phenotype root:** `/Users/kooshapari/CodeProjects/Phenotype/repos/CLAUDE.md`
-- **AgilePlus mandate:** `/Users/kooshapari/CodeProjects/Phenotype/repos/AgilePlus`
+- **Global baseline:** Refer to global `CLAUDE.md` configuration
+- **Phenotype root:** Refer to parent Phenotype organization `CLAUDE.md`
+- **AgilePlus mandate:** Refer to AgilePlus repository
 - **Governance reference:** `AGENTS.md` (local, this repository)
 
 ## Project Overview
 
 - **Name:** PhenoProc
 - **Description:** Process management
-- **Location:** /Users/kooshapari/CodeProjects/Phenotype/repos/PhenoProc
 - **Language Stack:** Rust
 - **Status:** Active
 
 ## AgilePlus Mandate
 
 All work MUST be tracked in AgilePlus:
-- CLI: `cd /Users/kooshapari/CodeProjects/Phenotype/repos/AgilePlus && agileplus <command>`
 - Check for existing specs before implementing
 - Create spec for new work: `agileplus specify --title "<feature>" --description "<desc>"`
 - No code without corresponding AgilePlus spec
