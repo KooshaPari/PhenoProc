@@ -1,5 +1,7 @@
 # PhenoProc
 
+**Status:** maintenance
+
 High-performance process orchestration and lifecycle management library for Rust. Provides unified APIs for process pooling, task queuing, shared memory coordination, and inter-process communication (IPC) via Unix domain sockets.
 
 ## Overview
