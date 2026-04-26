@@ -24,7 +24,6 @@ members = [
     "crates/phenotype-retry",
     "crates/phenotype-health",
     "crates/phenotype-telemetry",
-    "crates/phenotype-cli-core",
     "crates/phenotype-config-loader",
     "crates/phenotype-project-registry",
     "crates/phenotype-mock",
@@ -73,7 +72,6 @@ phenotype-async-traits = { path = "crates/phenotype-async-traits" }
 phenotype-retry = { path = "crates/phenotype-retry" }
 phenotype-health = { path = "crates/phenotype-health" }
 phenotype-telemetry = { path = "crates/phenotype-telemetry" }
-phenotype-cli-core = { path = "crates/phenotype-cli-core" }
 phenotype-config-loader = { path = "crates/phenotype-config-loader" }
 phenotype-project-registry = { path = "crates/phenotype-project-registry" }
 phenotype-mock = { path = "crates/phenotype-mock" }
