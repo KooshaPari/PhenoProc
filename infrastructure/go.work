@@ -1,0 +1,9 @@
+go 1.21
+
+use (
+    .
+    ./oauth2
+    ./ratelimit
+    ./secrets
+    ./storage
+)

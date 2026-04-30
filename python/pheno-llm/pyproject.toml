@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
-    {name = "Phenotype Team", email = "team@phenotype.dev"}
+    {name = "Phenotype Team", email = "team@kooshapari.com"}
 ]
 keywords = ["phenotype", "ai", "infrastructure", "phenoproc"]
 classifiers = [
@@ -21,7 +21,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/phenotype/phenoproc"
 Repository = "https://github.com/phenotype/phenoproc"
-Documentation = "https://docs.phenotype.dev"
+Documentation = "https://docs.kooshapari.com"
 
 [build-system]
 requires = ["hatchling"]
