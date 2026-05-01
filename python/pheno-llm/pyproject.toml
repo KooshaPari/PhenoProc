@@ -21,7 +21,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/phenotype/phenoproc"
 Repository = "https://github.com/phenotype/phenoproc"
-Documentation = "https://docs.phenotype.dev"
+Documentation = "https://docs.phenotype.space"
 
 [build-system]
 requires = ["hatchling"]
