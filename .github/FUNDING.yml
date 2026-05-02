@@ -1,6 +1,2 @@
-# These are supported funding model platforms
-
-github: KooshaPari
-patreon:
-ko_fi:
-custom: ["https://phenotype.space/sponsor"]
+# Funding configuration
+github: ["KooshaPari"]
