@@ -5,6 +5,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+/// Type alias for mock function handler
+type MockHandler<I, O> = Arc<Mutex<Box<dyn FnMut(I) -> O + Send + 'static>>>;
+
 /// A mock function call record
 #[derive(Debug, Clone)]
 pub struct Call {
@@ -116,7 +119,7 @@ impl<T: std::hash::Hash + Eq + Clone + std::fmt::Debug, R: Clone> Default for Mo
 
 /// A mock for functions with side effects
 pub struct MockFn<I, O> {
-    handler: Arc<Mutex<Box<dyn FnMut(I) -> O + Send + 'static>>>,
+    handler: MockHandler<I, O>,
     context: MockContext,
 }
 

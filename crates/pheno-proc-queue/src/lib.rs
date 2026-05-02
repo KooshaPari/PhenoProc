@@ -24,15 +24,15 @@ pub enum Priority {
     Low = 3,
 }
 
-impl Priority {
-    /// Convert from string representation
-    pub fn from_str(s: &str) -> Option<Self> {
+impl std::str::FromStr for Priority {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "critical" => Some(Priority::Critical),
-            "high" => Some(Priority::High),
-            "normal" => Some(Priority::Normal),
-            "low" => Some(Priority::Low),
-            _ => None,
+            "critical" => Ok(Priority::Critical),
+            "high" => Ok(Priority::High),
+            "normal" => Ok(Priority::Normal),
+            "low" => Ok(Priority::Low),
+            _ => Err(()),
         }
     }
 }

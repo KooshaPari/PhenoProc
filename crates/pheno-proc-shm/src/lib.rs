@@ -17,6 +17,7 @@ pub enum ShmError {
 
 /// Shared memory segment
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct SharedMemory {
     name: String,
     data: Vec<u8>,

@@ -88,8 +88,8 @@ pub fn from_env<T: DeserializeOwned>(prefix: &str) -> Result<T> {
         .collect();
     
     let json = serde_json::to_string(&vars)
-        .map_err(|e| ConfigError::Json(e))?;
-    serde_json::from_str(&json).map_err(|e| ConfigError::Json(e))
+        .map_err(ConfigError::Json)?;
+    serde_json::from_str(&json).map_err(ConfigError::Json)
 }
 
 /// Configuration loader with builder pattern
@@ -98,6 +98,12 @@ pub struct ConfigLoader<T: DeserializeOwned> {
     file_path: Option<String>,
     env_prefix: Option<String>,
     _phantom: std::marker::PhantomData<T>,
+}
+
+impl<T: DeserializeOwned + Default> Default for ConfigLoader<T> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<T: DeserializeOwned> ConfigLoader<T> {
@@ -150,7 +156,7 @@ pub fn merge_configs<T: DeserializeOwned + serde::Serialize>(
     }
     
     let json = serde_json::Value::Object(merged);
-    serde_json::from_value(json).map_err(|e| ConfigError::Json(e))
+    serde_json::from_value(json).map_err(ConfigError::Json)
 }
 
 #[cfg(test)]
