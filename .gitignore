@@ -3,3 +3,10 @@
 Evalora
 crates/datamold
 crates/guardis
+crates/datamold/
+crates/guardis/
+crates/phenotype-cli-core/
+crates/phenotype-colab-extensions/
+crates/thegent-cli-share/
+Evalora/
+worktree-manager/
