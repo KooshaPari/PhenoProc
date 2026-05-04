@@ -55,3 +55,6 @@ crates/phenotype-cli-core/
 crates/phenotype-colab-extensions/
 crates/thegent-cli-share/
 worktree-manager/
+
+# Rust build artifacts
+/target
