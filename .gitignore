@@ -58,3 +58,4 @@ worktree-manager/
 
 # Rust build artifacts
 /target
+target/
