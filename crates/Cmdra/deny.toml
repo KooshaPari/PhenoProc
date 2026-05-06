@@ -18,5 +18,11 @@ allow = [
 [sources]
 unknown-git = "deny"
 
+[bans]
+multiple-versions = "warn"
+wildcards = "warn"
+highlight = "all"
+workspace-default-features = "warn"
+
 [advisories]
 ignore = []
