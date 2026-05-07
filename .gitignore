@@ -60,3 +60,4 @@ worktree-manager/
 /target
 target/
 Cargo.lock
+Cargo.lock
