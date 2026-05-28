@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@0a12ed9e1a4ce4b1a02a5f2dd1e3a9c9e6c7f8b1 # v5
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:
           go-version: 'stable'
           cache: true
