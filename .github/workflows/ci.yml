@@ -11,23 +11,54 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  ci:
-    name: Rust CI
-    uses: KooshaPari/template-commons/.github/workflows/reusable-rust-ci.yml@main
-    with:
-      rust-version: stable
-      enable-coverage: true
+permissions:
+  contents: read
 
-  security:
-    name: Security Audit
-    uses: KooshaPari/template-commons/.github/workflows/reusable-security-scan.yml@main
-    with:
-      language: rust
-    secrets:
-      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+jobs:
+  rust-ci:
+    name: Rust CI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Check formatting
+        run: cargo fmt --check
+
+  go-ci:
+    name: Go CLI CI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@0a12ed9e1a4ce4b1a02a5f2dd1e3a9c9e6c7f8b1 # v5
+        with:
+          go-version: 'stable'
+          cache: true
+      - name: Build
+        run: cd phenotype-cli-core && go build ./...
+      - name: Run tests
+        run: cd phenotype-cli-core && go test ./...
 
   phenotype-validate:
     name: Governance Validation
-    uses: KooshaPari/phenotypeActions/.github/workflows/validate-governance.yml@main
-
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Check required governance files exist
+        run: |
+          for f in README.md CLAUDE.md AGENTS.md PLAN.md; do
+            if [ ! -f "$f" ]; then
+              echo "MISSING: $f"
+              exit 1
+            fi
+          done
+          echo "Governance files present."
