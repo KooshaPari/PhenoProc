@@ -11,13 +11,13 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65
         with:
           node-version: '20'
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5
       - name: Install dependencies
         run: |
           if [ -f docs/package.json ]; then npm ci;
@@ -31,4 +31,4 @@ jobs:
         with:
           path: docs/.vitepress/dist
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@7c51b6e2f1b1d9f5a93c0c9b0b7f6d5c8e8f9a1b  # v4
