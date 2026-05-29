@@ -27,8 +27,8 @@ jobs:
           if [ -f docs/package.json ]; then npm run docs:build;
           else npx vitepress build docs; fi
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v5
         with:
           path: docs/.vitepress/dist
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@7c51b6e2f1b1d9f5a93c0c9b0b7f6d5c8e8f9a1b  # v4
+        uses: actions/deploy-pages@4a352b5f17c6ff6b381c1a3abcc8b016e8a1c5c2  # v4
