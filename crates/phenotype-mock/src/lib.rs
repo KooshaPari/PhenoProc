@@ -28,7 +28,7 @@ impl MockContext {
             calls: Arc::new(Mutex::new(Vec::new())),
         }
     }
-    
+
     /// Record a function call
     pub fn record_call(&self, name: impl Into<String>, args: Vec<String>) {
         let mut calls = self.calls.lock().unwrap();
@@ -37,22 +37,27 @@ impl MockContext {
             args,
         });
     }
-    
+
     /// Get all recorded calls
     pub fn calls(&self) -> Vec<Call> {
         self.calls.lock().unwrap().clone()
     }
-    
+
     /// Check if a function was called
     pub fn was_called(&self, name: &str) -> bool {
         self.calls.lock().unwrap().iter().any(|c| c.name == name)
     }
-    
+
     /// Get call count for a function
     pub fn call_count(&self, name: &str) -> usize {
-        self.calls.lock().unwrap().iter().filter(|c| c.name == name).count()
+        self.calls
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|c| c.name == name)
+            .count()
     }
-    
+
     /// Reset all recorded calls
     pub fn reset(&self) {
         self.calls.lock().unwrap().clear();
@@ -75,36 +80,35 @@ impl<T: std::hash::Hash + Eq + Clone + std::fmt::Debug, R: Clone> Mock<T, R> {
             context: MockContext::new(),
         }
     }
-    
+
     /// Set return value for a specific input
     pub fn when(&self, input: T, output: R) -> &Self {
         self.returns.lock().unwrap().insert(input, output);
         self
     }
-    
+
     /// Set default return value
     pub fn default_return(&self, output: R) -> &Self {
         *self.default.lock().unwrap() = Some(output);
         self
     }
-    
+
     /// Call the mock function
     pub fn call(&self, input: T) -> R {
         let returns = self.returns.lock().unwrap();
-        let result = returns.get(&input).cloned().or_else(|| {
-            self.default.lock().unwrap().clone()
-        });
-        
+        let result = returns
+            .get(&input)
+            .cloned()
+            .or_else(|| self.default.lock().unwrap().clone());
+
         drop(returns);
-        
-        self.context.record_call(
-            "mock",
-            vec![format!("{:?}", input)]
-        );
-        
+
+        self.context
+            .record_call("mock", vec![format!("{:?}", input)]);
+
         result.expect("No return value set for mock")
     }
-    
+
     /// Get the mock context
     pub fn context(&self) -> &MockContext {
         &self.context
@@ -134,13 +138,13 @@ impl<I, O> MockFn<I, O> {
             context: MockContext::new(),
         }
     }
-    
+
     /// Call the mock function
     pub fn call(&self, input: I) -> O {
         let mut handler = self.handler.lock().unwrap();
         handler(input)
     }
-    
+
     /// Get the mock context
     pub fn context(&self) -> &MockContext {
         &self.context
@@ -172,9 +176,8 @@ mod tests {
     #[test]
     fn test_mock() {
         let mock: Mock<String, i32> = Mock::new();
-        mock.when("hello".to_string(), 42)
-            .default_return(0);
-        
+        mock.when("hello".to_string(), 42).default_return(0);
+
         assert_eq!(mock.call("hello".to_string()), 42);
         assert_eq!(mock.call("world".to_string()), 0);
     }

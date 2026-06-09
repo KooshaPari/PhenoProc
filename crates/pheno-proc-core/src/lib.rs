@@ -2,11 +2,11 @@
 //!
 //! Core process management types and traits used by sharecli.
 
+use anyhow::{bail, Result};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use anyhow::{Result, bail};
 
 /// Information about a managed process
 #[derive(Debug, Clone)]
@@ -104,7 +104,7 @@ impl ProjectResources {
 
     pub async fn get_limits(&self, project: &str) -> ProjectLimits {
         let limits = self.limits.lock().unwrap();
-        limits.get(project).cloned().unwrap_or_else(|| ProjectLimits {
+        limits.get(project).cloned().unwrap_or(ProjectLimits {
             memory_limit_mb: 4096,
             max_processes: 10,
             cpu_affinity: None,
@@ -188,7 +188,12 @@ impl SharedRuntime {
         }
     }
 
-    pub async fn run_with_pool(&self, harness_type: &str, project: &str, _cmd: &str) -> Result<(u32, String)> {
+    pub async fn run_with_pool(
+        &self,
+        harness_type: &str,
+        project: &str,
+        _cmd: &str,
+    ) -> Result<(u32, String)> {
         let pid = std::process::id();
         Ok((pid, format!("{} process for {}", harness_type, project)))
     }
@@ -300,7 +305,9 @@ impl ProcessPool {
         name: Option<String>,
     ) -> Result<ProcessInfo> {
         let pid = std::process::id();
-        let cwd_str = cwd.map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| ".".to_string());
+        let cwd_str = cwd
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| ".".to_string());
         let proc_name = name.unwrap_or_else(|| harness.to_string());
         let proj = project.unwrap_or_else(|| "default".to_string());
 

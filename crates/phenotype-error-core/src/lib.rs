@@ -21,8 +21,25 @@ pub enum PhenotypeError {
 
 /// API error type
 #[derive(Error, Debug, Clone)]
-#[error("API error: {0}")]
-pub struct ApiError(pub String);
+pub enum ApiError {
+    #[error("Not found: {resource} (id: {id})")]
+    NotFound { resource: String, id: String },
+    #[error("Validation error: {0}")]
+    Validation(String),
+    #[error("API error: {0}")]
+    Other(String),
+}
+
+impl ApiError {
+    /// HTTP status code for this error
+    pub fn status_code(&self) -> u16 {
+        match self {
+            ApiError::NotFound { .. } => 404,
+            ApiError::Validation(_) => 422,
+            ApiError::Other(_) => 500,
+        }
+    }
+}
 
 /// Config error type
 #[derive(Error, Debug, Clone)]
@@ -31,8 +48,12 @@ pub struct ConfigError(pub String);
 
 /// Domain error type
 #[derive(Error, Debug, Clone)]
-#[error("Domain error: {0}")]
-pub struct DomainError(pub String);
+pub enum DomainError {
+    #[error("validation failed: {0}")]
+    Validation(String),
+    #[error("Domain error: {0}")]
+    Other(String),
+}
 
 /// Error envelope type
 #[derive(Debug, Clone)]

@@ -1,9 +1,9 @@
 //! Unix Domain Socket IPC for PhenoProc
 
 use std::path::Path;
-use tokio::net::{UnixListener, UnixStream};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use thiserror::Error;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{UnixListener, UnixStream};
 
 /// UDS IPC error
 #[derive(Debug, Error)]
@@ -71,10 +71,10 @@ impl UdsStream {
             return Err(UdsError::ConnectionClosed);
         }
         let len = u32::from_be_bytes(len_buf) as usize;
-        
+
         let mut buf = vec![0u8; len];
         self.stream.read_exact(&mut buf).await?;
-        
+
         String::from_utf8(buf).map_err(|_| UdsError::InvalidMessage)
     }
 }
@@ -111,7 +111,7 @@ mod tests {
         let _ = std::fs::remove_file(socket_path);
 
         let server = UdsServer::bind(socket_path).await.unwrap();
-        
+
         // Spawn server
         let server_handle = tokio::spawn(async move {
             let mut stream = server.accept().await.unwrap();
@@ -133,7 +133,8 @@ mod tests {
             let (r1, r2) = tokio::join!(server_handle, client_handle);
             r1.unwrap();
             r2.unwrap();
-        }).await;
+        })
+        .await;
 
         let _ = std::fs::remove_file(socket_path);
     }

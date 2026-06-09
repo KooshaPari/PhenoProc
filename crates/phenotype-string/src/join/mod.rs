@@ -2,25 +2,23 @@
 //!
 //! Provides efficient string concatenation
 
-
 /// Join strings with a separator
 pub fn join<T: AsRef<str>>(items: &[T], separator: &str) -> String {
     if items.is_empty() {
         return String::new();
     }
-    
+
     let mut result = String::with_capacity(
-        items.iter().map(|s| s.as_ref().len()).sum::<usize>()
-            + separator.len() * (items.len() - 1)
+        items.iter().map(|s| s.as_ref().len()).sum::<usize>() + separator.len() * (items.len() - 1),
     );
-    
+
     for (i, item) in items.iter().enumerate() {
         if i > 0 {
             result.push_str(separator);
         }
         result.push_str(item.as_ref());
     }
-    
+
     result
 }
 
@@ -56,23 +54,23 @@ impl StringBuilder {
             buffer: String::with_capacity(capacity),
         }
     }
-    
+
     /// Append a string
     pub fn append(&mut self, s: &str) -> &mut Self {
         self.buffer.push_str(s);
         self
     }
-    
+
     /// Get the built string
     pub fn build(self) -> String {
         self.buffer
     }
-    
+
     /// Get current length
     pub fn len(&self) -> usize {
         self.buffer.len()
     }
-    
+
     /// Check if empty
     pub fn is_empty(&self) -> bool {
         self.buffer.is_empty()

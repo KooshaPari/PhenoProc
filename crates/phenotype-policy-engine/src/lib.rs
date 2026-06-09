@@ -24,7 +24,7 @@ impl PolicyEngine {
     pub fn new() -> Self {
         Self
     }
-    
+
     /// Evaluate a policy
     pub fn evaluate(&self, _policy: &Policy) -> bool {
         // Stub implementation

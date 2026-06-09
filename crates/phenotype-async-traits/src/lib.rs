@@ -12,7 +12,10 @@ pub trait Cancellable: Send + Sync {
 /// Async trait for operations with timeout
 pub trait Timeoutable: Send + Sync {
     /// Set timeout for the operation
-    fn with_timeout(self, duration: std::time::Duration) -> Pin<Box<dyn Future<Output = Self> + Send>>
+    fn with_timeout(
+        self,
+        duration: std::time::Duration,
+    ) -> Pin<Box<dyn Future<Output = Self> + Send>>
     where
         Self: Sized;
 }

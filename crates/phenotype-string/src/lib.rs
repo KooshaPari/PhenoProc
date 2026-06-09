@@ -77,7 +77,7 @@ pub fn words(s: &str) -> Vec<&str> {
 pub fn to_snake_case(s: &str) -> String {
     let mut result = String::new();
     let mut prev_lower = false;
-    
+
     for c in s.chars() {
         if c.is_uppercase() {
             if prev_lower {
@@ -93,7 +93,7 @@ pub fn to_snake_case(s: &str) -> String {
             prev_lower = false;
         }
     }
-    
+
     result.trim_matches('_').to_string()
 }
 
@@ -101,7 +101,7 @@ pub fn to_snake_case(s: &str) -> String {
 pub fn to_camel_case(s: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
-    
+
     for c in s.chars() {
         if c.is_alphanumeric() {
             if capitalize_next {
@@ -114,7 +114,7 @@ pub fn to_camel_case(s: &str) -> String {
             capitalize_next = true;
         }
     }
-    
+
     result
 }
 

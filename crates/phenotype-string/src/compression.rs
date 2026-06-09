@@ -10,7 +10,7 @@ use zstd::stream::{read, write};
 pub enum CompressionError {
     #[error("IO error: {0}")]
     Io(#[from] io::Error),
-    
+
     #[error("Zstd error: {0}")]
     Zstd(String),
 }

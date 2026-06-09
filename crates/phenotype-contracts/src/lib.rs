@@ -7,7 +7,7 @@ pub fn validate() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_validate() {
         assert!(validate());

@@ -3,8 +3,8 @@
 use thiserror::Error;
 
 pub mod inbound;
-pub mod outbound;
 pub mod observability;
+pub mod outbound;
 
 // Re-export observability traits for convenience
 pub use observability::{CounterMetrics, MetricsHook, NoOpMetrics};
@@ -36,8 +36,8 @@ mod tests {
 
     #[test]
     fn result_ok() {
-        let val: Result<i32> = Ok(42);
-        assert_eq!(val.unwrap(), 42);
+        let val: std::result::Result<i32, Error> = Ok(42);
+        assert_eq!(val.ok(), Some(42));
     }
 
     #[test]

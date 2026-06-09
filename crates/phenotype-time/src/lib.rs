@@ -10,7 +10,7 @@ pub fn now() -> DateTime<Utc> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_now() {
         let _ = now();

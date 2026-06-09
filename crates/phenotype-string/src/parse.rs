@@ -7,7 +7,7 @@ use std::collections::HashMap;
 /// Parse key=value pairs from a string
 pub fn parse_key_value(s: &str, delimiter: char) -> HashMap<String, String> {
     let mut result = HashMap::new();
-    
+
     for part in s.split(delimiter) {
         if let Some(pos) = part.find('=') {
             let key = part[..pos].trim().to_string();
@@ -15,7 +15,7 @@ pub fn parse_key_value(s: &str, delimiter: char) -> HashMap<String, String> {
             result.insert(key, value);
         }
     }
-    
+
     result
 }
 
@@ -42,11 +42,11 @@ pub fn extract_json_value<'a>(json: &'a str, key: &str) -> Option<&'a str> {
     if let Some(pos) = json.find(&search) {
         let start = pos + search.len();
         let rest = &json[start..];
-        
+
         // Find the value
         let end = rest.find(&[',', '}'][..]).unwrap_or(rest.len());
         let value = rest[..end].trim();
-        
+
         // Remove quotes if present
         if value.starts_with('"') && value.ends_with('"') {
             return Some(&value[1..value.len() - 1]);

@@ -180,13 +180,7 @@ impl StateMachineBuilder {
     }
 
     /// Add a guarded transition.
-    pub fn guarded_transition<F>(
-        mut self,
-        from: &str,
-        event: &str,
-        to: &str,
-        guard: F,
-    ) -> Self
+    pub fn guarded_transition<F>(mut self, from: &str, event: &str, to: &str, guard: F) -> Self
     where
         F: Fn(&str, &str) -> bool + Send + Sync + 'static,
     {

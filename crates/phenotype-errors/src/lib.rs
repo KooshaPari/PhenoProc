@@ -20,10 +20,7 @@
 //! use phenotype_error_core::{ApiError, Result};
 //! ```
 
-#![deprecated(
-    since = "0.2.0",
-    note = "Use phenotype-error-core directly instead"
-)]
+#![deprecated(since = "0.2.0", note = "Use phenotype-error-core directly instead")]
 
 pub use phenotype_error_core::{
     ApiError, ConfigError, DomainError, ErrorEnvelope, RepositoryError, StorageError,
@@ -52,8 +49,8 @@ mod tests {
 
     #[test]
     fn test_result_type_ok() {
-        let r: Result<i32> = Ok(42);
-        assert_eq!(r.unwrap(), 42);
+        let r: std::result::Result<i32, ApiError> = Ok(42);
+        assert_eq!(r.ok(), Some(42));
     }
 
     #[test]

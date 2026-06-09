@@ -23,7 +23,7 @@ pub fn remove_whitespace(s: &str) -> String {
 pub fn normalize_whitespace(s: &str) -> String {
     let mut result = String::with_capacity(s.len());
     let mut prev_whitespace = false;
-    
+
     for c in s.chars() {
         if c.is_whitespace() {
             if !prev_whitespace {
@@ -35,7 +35,7 @@ pub fn normalize_whitespace(s: &str) -> String {
             prev_whitespace = false;
         }
     }
-    
+
     result.trim().to_string()
 }
 

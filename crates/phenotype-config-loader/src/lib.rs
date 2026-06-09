@@ -54,11 +54,10 @@ impl ConfigFormat {
 /// Load configuration from a file
 pub fn load_from_file<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> Result<T> {
     let content = std::fs::read_to_string(&path)?;
-    let format = ConfigFormat::from_path(&path)
-        .ok_or_else(|| ConfigError::UnsupportedFormat(
-            path.as_ref().to_string_lossy().to_string()
-        ))?;
-    
+    let format = ConfigFormat::from_path(&path).ok_or_else(|| {
+        ConfigError::UnsupportedFormat(path.as_ref().to_string_lossy().to_string())
+    })?;
+
     parse_config(&content, format)
 }
 
@@ -74,8 +73,7 @@ pub fn parse_config<T: DeserializeOwned>(content: &str, format: ConfigFormat) ->
             Ok(value)
         }
         ConfigFormat::Yaml => {
-            serde_yaml::from_str(content)
-                .map_err(|e| ConfigError::Yaml(e.to_string()))
+            serde_yaml::from_str(content).map_err(|e| ConfigError::Yaml(e.to_string()))
         }
     }
 }
@@ -86,9 +84,8 @@ pub fn from_env<T: DeserializeOwned>(prefix: &str) -> Result<T> {
         .filter(|(k, _)| k.starts_with(prefix))
         .map(|(k, v)| (k.trim_start_matches(prefix).to_lowercase(), v))
         .collect();
-    
-    let json = serde_json::to_string(&vars)
-        .map_err(ConfigError::Json)?;
+
+    let json = serde_json::to_string(&vars).map_err(ConfigError::Json)?;
     serde_json::from_str(&json).map_err(ConfigError::Json)
 }
 
@@ -115,19 +112,19 @@ impl<T: DeserializeOwned> ConfigLoader<T> {
             _phantom: std::marker::PhantomData,
         }
     }
-    
+
     /// Set file path to load from
     pub fn with_file(mut self, path: impl Into<String>) -> Self {
         self.file_path = Some(path.into());
         self
     }
-    
+
     /// Set environment variable prefix
     pub fn with_env_prefix(mut self, prefix: impl Into<String>) -> Self {
         self.env_prefix = Some(prefix.into());
         self
     }
-    
+
     /// Load configuration
     pub fn load(self) -> Result<T> {
         if let Some(path) = self.file_path {
@@ -145,7 +142,7 @@ pub fn merge_configs<T: DeserializeOwned + serde::Serialize>(
     sources: Vec<(String, ConfigFormat)>,
 ) -> Result<T> {
     let mut merged = serde_json::Map::new();
-    
+
     for (content, format) in sources {
         let value: serde_json::Value = parse_config(&content, format)?;
         if let serde_json::Value::Object(map) = value {
@@ -154,7 +151,7 @@ pub fn merge_configs<T: DeserializeOwned + serde::Serialize>(
             }
         }
     }
-    
+
     let json = serde_json::Value::Object(merged);
     serde_json::from_value(json).map_err(ConfigError::Json)
 }
@@ -162,7 +159,7 @@ pub fn merge_configs<T: DeserializeOwned + serde::Serialize>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
     use std::io::Write;
     use tempfile::NamedTempFile;
 
@@ -192,9 +189,9 @@ value = 42
 
     #[test]
     fn test_load_from_file() -> Result<()> {
-        let mut file = NamedTempFile::new()?;
+        let mut file = NamedTempFile::with_suffix(".json")?;
         write!(file, r#"{{"name": "test", "value": 42}}"#)?;
-        
+
         let config: TestConfig = load_from_file(file.path())?;
         assert_eq!(config.name, "test");
         Ok(())
@@ -202,9 +199,18 @@ value = 42
 
     #[test]
     fn test_config_format_from_path() {
-        assert_eq!(ConfigFormat::from_path("config.toml"), Some(ConfigFormat::Toml));
-        assert_eq!(ConfigFormat::from_path("config.yaml"), Some(ConfigFormat::Yaml));
-        assert_eq!(ConfigFormat::from_path("config.json"), Some(ConfigFormat::Json));
+        assert_eq!(
+            ConfigFormat::from_path("config.toml"),
+            Some(ConfigFormat::Toml)
+        );
+        assert_eq!(
+            ConfigFormat::from_path("config.yaml"),
+            Some(ConfigFormat::Yaml)
+        );
+        assert_eq!(
+            ConfigFormat::from_path("config.json"),
+            Some(ConfigFormat::Json)
+        );
         assert_eq!(ConfigFormat::from_path("config.txt"), None);
     }
 }

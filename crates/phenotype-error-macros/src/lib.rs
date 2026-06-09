@@ -9,7 +9,7 @@ use quote::quote;
 #[proc_macro_derive(PhenotypeError)]
 pub fn derive_error(input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
-    
+
     // Simple implementation that generates Display and Error traits
     let expanded = quote! {
         // The derive macro implementation
@@ -18,9 +18,9 @@ pub fn derive_error(input: TokenStream) -> TokenStream {
                 write!(f, "{:?}", self)
             }
         }
-        
+
         impl std::error::Error for #input {}
     };
-    
+
     TokenStream::from(expanded)
 }

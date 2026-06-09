@@ -39,7 +39,10 @@ impl Schema {
     }
 
     /// Validate data against schema
-    pub fn validate(&self, data: &HashMap<String, serde_json::Value>) -> Result<(), SchemaValidationError> {
+    pub fn validate(
+        &self,
+        data: &HashMap<String, serde_json::Value>,
+    ) -> Result<(), SchemaValidationError> {
         for field in &self.required {
             if !data.contains_key(field) {
                 return Err(SchemaValidationError::MissingField(field.clone()));

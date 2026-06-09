@@ -14,7 +14,7 @@ impl Timer {
             start: Instant::now(),
         }
     }
-    
+
     /// Get elapsed time
     pub fn elapsed(&self) -> Duration {
         self.start.elapsed()
