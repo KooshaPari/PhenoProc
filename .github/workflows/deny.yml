@@ -15,6 +15,11 @@ on:
   schedule:
     - cron: '0 9 * * 1'
 
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   cargo-deny:
     runs-on: ubuntu-latest
@@ -26,6 +31,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run cargo-deny
-        uses: EmbarkStudios/cargo-deny-action@v2
+        uses: EmbarkStudios/cargo-deny-action@91bf2b620e09e18d6eb78b92e7861937469acedb
         with:
           rust-version: stable
