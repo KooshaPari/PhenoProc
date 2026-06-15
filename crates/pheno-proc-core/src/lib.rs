@@ -510,4 +510,265 @@ mod tests {
         let by_harness = pool.find(ProcessFilter::ByHarness("codex".to_string()));
         assert_eq!(by_harness.len(), 1);
     }
+
+    #[test]
+    fn test_process_status_display() {
+        assert_eq!(ProcessStatus::Running.to_string(), "running");
+        assert_eq!(ProcessStatus::Stopped.to_string(), "stopped");
+        assert_eq!(ProcessStatus::Exited.to_string(), "exited");
+        assert_eq!(ProcessStatus::Error.to_string(), "error");
+    }
+
+    #[test]
+    fn test_process_pool_default_and_with_limits() {
+        let pool = ProcessPool::default();
+        assert_eq!(pool.max_memory_mb, 4096);
+        assert_eq!(pool.max_processes, 100);
+
+        let custom = ProcessPool::with_limits(8192, 50);
+        assert_eq!(custom.max_memory_mb, 8192);
+        assert_eq!(custom.max_processes, 50);
+    }
+
+    #[test]
+    fn test_process_pool_get_and_list() {
+        let pool = ProcessPool::new();
+        let p = create_test_process(2000, "alpha", "claude");
+        pool.add(p);
+
+        let fetched = pool.get(2000);
+        assert!(fetched.is_some());
+        assert_eq!(fetched.unwrap().info.pid, 2000);
+
+        let missing = pool.get(9999);
+        assert!(missing.is_none());
+
+        let listing = pool.list();
+        assert_eq!(listing.len(), 1);
+        assert_eq!(listing[0].pid, 2000);
+    }
+
+    #[test]
+    fn test_process_pool_remove_missing() {
+        let pool = ProcessPool::new();
+        let removed = pool.remove(12345);
+        assert!(removed.is_none());
+        assert_eq!(pool.count(), 0);
+    }
+
+    #[test]
+    fn test_process_pool_clear() {
+        let pool = ProcessPool::new();
+        pool.add(create_test_process(1, "p", "h"));
+        pool.add(create_test_process(2, "p", "h"));
+        assert_eq!(pool.count(), 2);
+
+        pool.clear();
+        assert_eq!(pool.count(), 0);
+        assert!(pool.list().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_process_pool_spawn() {
+        let pool = ProcessPool::new();
+        let info = pool
+            .spawn(
+                "claude",
+                &["--flag".to_string(), "value".to_string()],
+                None,
+                Some("my-project".to_string()),
+                Some("custom-name".to_string()),
+            )
+            .await
+            .expect("spawn should succeed");
+
+        assert_eq!(info.harness, "claude");
+        assert_eq!(info.project, "my-project");
+        assert_eq!(info.name, "custom-name");
+        assert_eq!(info.cmd, vec!["--flag".to_string(), "value".to_string()]);
+        assert_eq!(info.status, ProcessStatus::Running);
+        assert_eq!(pool.count(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_process_pool_spawn_defaults() {
+        let pool = ProcessPool::new();
+        let info = pool
+            .spawn("codex", &[], None, None, None)
+            .await
+            .expect("spawn should succeed");
+
+        // Defaults to harness name and "default" project
+        assert_eq!(info.harness, "codex");
+        assert_eq!(info.project, "default");
+        assert_eq!(info.name, "codex");
+    }
+
+    #[tokio::test]
+    async fn test_process_pool_spawn_with_cwd() {
+        let pool = ProcessPool::new();
+        let info = pool
+            .spawn(
+                "claude",
+                &[],
+                Some(PathBuf::from("/tmp/work")),
+                None,
+                None,
+            )
+            .await
+            .expect("spawn should succeed");
+
+        assert_eq!(info.pid, pool.get(info.pid).unwrap().info.pid);
+        let stored = pool.get(info.pid).unwrap();
+        assert_eq!(stored.cwd, "/tmp/work");
+    }
+
+    #[tokio::test]
+    async fn test_process_pool_kill() {
+        let pool = ProcessPool::new();
+        let info = pool
+            .spawn("claude", &[], None, None, None)
+            .await
+            .unwrap();
+
+        pool.kill(info.pid).await.expect("kill should succeed");
+
+        let after = pool.get(info.pid).unwrap();
+        assert_eq!(after.info.status, ProcessStatus::Exited);
+    }
+
+    #[tokio::test]
+    async fn test_process_pool_kill_missing() {
+        let pool = ProcessPool::new();
+        let res = pool.kill(424242).await;
+        assert!(res.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_process_pool_kill_all() {
+        let pool = ProcessPool::new();
+        let i1 = pool.spawn("claude", &[], None, None, None).await.unwrap();
+        let i2 = pool.spawn("codex", &[], None, None, None).await.unwrap();
+
+        pool.kill_all().await.expect("kill_all should succeed");
+
+        assert_eq!(pool.get(i1.pid).unwrap().info.status, ProcessStatus::Exited);
+        assert_eq!(pool.get(i2.pid).unwrap().info.status, ProcessStatus::Exited);
+    }
+
+    #[tokio::test]
+    async fn test_process_pool_system_memory_usage() {
+        let pool = ProcessPool::with_limits(8192, 10);
+        pool.add(create_test_process(1, "p", "h"));
+        pool.add(create_test_process(2, "p", "h"));
+
+        let (used, max) = pool.system_memory_usage().await;
+        assert_eq!(used, 200); // 100 + 100
+        assert_eq!(max, 8192);
+    }
+
+    #[tokio::test]
+    async fn test_project_resources_defaults() {
+        let res = ProjectResources::new();
+        let defaults = res.get_limits("unknown").await;
+        assert_eq!(defaults.memory_limit_mb, 4096);
+        assert_eq!(defaults.max_processes, 10);
+        assert!(defaults.cpu_affinity.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_project_resources_set_get() {
+        let res = ProjectResources::new();
+        let custom = ProjectLimits {
+            memory_limit_mb: 2048,
+            max_processes: 4,
+            cpu_affinity: Some(vec![0, 1]),
+        };
+        res.set_limits("acme", custom.clone()).await;
+
+        let fetched = res.get_limits("acme").await;
+        assert_eq!(fetched.memory_limit_mb, 2048);
+        assert_eq!(fetched.max_processes, 4);
+        assert_eq!(fetched.cpu_affinity, Some(vec![0, 1]));
+    }
+
+    #[tokio::test]
+    async fn test_project_resources_default_trait() {
+        let res = ProjectResources::default();
+        let limits = res.get_limits("nope").await;
+        assert_eq!(limits.memory_limit_mb, 4096);
+    }
+
+    #[tokio::test]
+    async fn test_project_resources_check_limits() {
+        let res = ProjectResources::new();
+        let check = res.check_limits("unknown").await.unwrap();
+        assert_eq!(check.memory_mb, 0);
+        assert_eq!(check.memory_limit_mb, 4096);
+        assert!(check.memory_ok);
+        assert_eq!(check.process_count, 0);
+        assert_eq!(check.max_processes, 10);
+        assert!(check.processes_ok);
+        assert!(check.overall_ok());
+    }
+
+    #[test]
+    fn test_project_limit_check_overall_ok() {
+        let ok = ProjectLimitCheck {
+            memory_mb: 1,
+            memory_limit_mb: 100,
+            memory_ok: true,
+            process_count: 1,
+            max_processes: 5,
+            processes_ok: true,
+        };
+        assert!(ok.overall_ok());
+
+        let mem_bad = ProjectLimitCheck {
+            memory_ok: false,
+            ..ok.clone()
+        };
+        assert!(!mem_bad.overall_ok());
+
+        let proc_bad = ProjectLimitCheck {
+            processes_ok: false,
+            ..ok.clone()
+        };
+        assert!(!proc_bad.overall_ok());
+    }
+
+    #[tokio::test]
+    async fn test_shared_runtime_new_and_status() {
+        let rt = SharedRuntime::new(8);
+        let status = rt.status().await;
+        assert_eq!(status.max_per_type, 8);
+        assert_eq!(status.node_total, 0);
+        assert_eq!(status.node_idle, 0);
+        assert_eq!(status.bun_total, 0);
+        assert_eq!(status.bun_idle, 0);
+    }
+
+    #[tokio::test]
+    async fn test_shared_runtime_run_with_pool() {
+        let rt = SharedRuntime::new(2);
+        let (pid, label) = rt.run_with_pool("claude", "my-proj", "echo hi").await.unwrap();
+        assert!(pid > 0);
+        assert!(label.contains("claude"));
+        assert!(label.contains("my-proj"));
+    }
+
+    #[tokio::test]
+    async fn test_shared_runtime_health_check() {
+        let mut rt = SharedRuntime::new(4);
+        rt.node_total = 5;
+        rt.node_idle = 2;
+        rt.bun_total = 3;
+        rt.bun_idle = 1;
+
+        let h = rt.health_check().await;
+        assert!(h.healthy);
+        assert!(h.issues.is_empty());
+        assert_eq!(h.node_in_use, 3);
+        assert_eq!(h.bun_in_use, 2);
+    }
 }
