@@ -74,3 +74,99 @@ pub struct StorageError(pub String);
 
 /// Result type alias
 pub type Result<T> = std::result::Result<T, PhenotypeError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn phenotype_error_display() {
+        assert_eq!(
+            PhenotypeError::Config("oops".into()).to_string(),
+            "Configuration error: oops"
+        );
+        assert_eq!(
+            PhenotypeError::Io("disk".into()).to_string(),
+            "IO error: disk"
+        );
+        assert_eq!(
+            PhenotypeError::Validation("bad".into()).to_string(),
+            "Validation error: bad"
+        );
+        assert_eq!(
+            PhenotypeError::Unknown("?".into()).to_string(),
+            "Unknown error: ?"
+        );
+    }
+
+    #[test]
+    fn api_error_status_code() {
+        assert_eq!(
+            ApiError::NotFound {
+                resource: "user".into(),
+                id: "1".into()
+            }
+            .status_code(),
+            404
+        );
+        assert_eq!(ApiError::Validation("x".into()).status_code(), 422);
+        assert_eq!(ApiError::Other("x".into()).status_code(), 500);
+    }
+
+    #[test]
+    fn api_error_display() {
+        let e = ApiError::NotFound {
+            resource: "user".into(),
+            id: "42".into(),
+        };
+        assert_eq!(e.to_string(), "Not found: user (id: 42)");
+        assert_eq!(ApiError::Validation("x".into()).to_string(), "Validation error: x");
+        assert_eq!(ApiError::Other("x".into()).to_string(), "API error: x");
+    }
+
+    #[test]
+    fn config_error_display() {
+        let e = ConfigError("bad config".into());
+        assert_eq!(e.to_string(), "Config error: bad config");
+    }
+
+    #[test]
+    fn domain_error_display() {
+        assert_eq!(
+            DomainError::Validation("x".into()).to_string(),
+            "validation failed: x"
+        );
+        assert_eq!(
+            DomainError::Other("x".into()).to_string(),
+            "Domain error: x"
+        );
+    }
+
+    #[test]
+    fn envelope_is_debug_and_clone() {
+        let env = ErrorEnvelope {
+            message: "msg".into(),
+            code: 7,
+        };
+        let copy = env.clone();
+        assert_eq!(copy.message, "msg");
+        assert_eq!(copy.code, 7);
+        let _ = format!("{:?}", env);
+    }
+
+    #[test]
+    fn repository_error_display() {
+        assert_eq!(
+            RepositoryError("db down".into()).to_string(),
+            "Repository error: db down"
+        );
+    }
+
+    #[test]
+    fn storage_error_display() {
+        assert_eq!(
+            StorageError("full".into()).to_string(),
+            "Storage error: full"
+        );
+    }
+}
