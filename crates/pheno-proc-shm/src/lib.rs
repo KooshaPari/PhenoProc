@@ -140,4 +140,106 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0], "test_seg");
     }
+
+    #[test]
+    fn test_shm_open_default_size() {
+        let shm = SharedMemory::open("foo").unwrap();
+        assert_eq!(shm.size(), 4096);
+    }
+
+    #[test]
+    fn test_shm_size() {
+        let shm = SharedMemory::create("x", 256).unwrap();
+        assert_eq!(shm.size(), 256);
+    }
+
+    #[test]
+    fn test_shm_write_out_of_bounds() {
+        let mut shm = SharedMemory::create("x", 16).unwrap();
+        let big = vec![0u8; 32];
+        let res = shm.write(0, &big);
+        assert!(matches!(res, Err(ShmError::Io(_))));
+    }
+
+    #[test]
+    fn test_shm_write_offset_past_end() {
+        let mut shm = SharedMemory::create("x", 16).unwrap();
+        let res = shm.write(8, b"abcdefghij");
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_shm_read_out_of_bounds() {
+        let shm = SharedMemory::create("x", 16).unwrap();
+        let res = shm.read(0, 32);
+        assert!(matches!(res, Err(ShmError::Io(_))));
+    }
+
+    #[test]
+    fn test_shm_read_at_offset() {
+        let mut shm = SharedMemory::create("x", 32).unwrap();
+        shm.write(4, b"abcd").unwrap();
+        let buf = shm.read(4, 4).unwrap();
+        assert_eq!(buf, b"abcd".to_vec());
+
+        // Zeros outside the written region.
+        let zeros = shm.read(0, 4).unwrap();
+        assert_eq!(zeros, vec![0u8; 4]);
+    }
+
+    #[test]
+    fn test_shm_error_display() {
+        let err1 = ShmError::NotFound("foo".to_string());
+        assert!(format!("{}", err1).contains("foo"));
+        assert!(format!("{}", err1).contains("not found"));
+
+        let err2 = ShmError::AlreadyExists("bar".to_string());
+        assert!(format!("{}", err2).contains("bar"));
+        assert!(format!("{}", err2).contains("already exists"));
+    }
+
+    #[test]
+    fn test_shm_registry_default() {
+        let registry = ShmRegistry::default();
+        assert!(registry.list().is_empty());
+    }
+
+    #[test]
+    fn test_shm_registry_duplicate_create() {
+        let registry = ShmRegistry::new();
+        registry.create("dup", 64).unwrap();
+        let res = registry.create("dup", 64);
+        assert!(matches!(res, Err(ShmError::AlreadyExists(_))));
+    }
+
+    #[test]
+    fn test_shm_registry_open_missing() {
+        let registry = ShmRegistry::new();
+        let res = registry.open("missing");
+        assert!(matches!(res, Err(ShmError::NotFound(_))));
+    }
+
+    #[test]
+    fn test_shm_registry_remove_ok_and_missing() {
+        let registry = ShmRegistry::new();
+        registry.create("rem", 8).unwrap();
+        registry.remove("rem").unwrap();
+        assert!(registry.list().is_empty());
+
+        let res = registry.remove("rem");
+        assert!(matches!(res, Err(ShmError::NotFound(_))));
+    }
+
+    #[test]
+    fn test_shm_registry_shared_arc_state() {
+        let registry = ShmRegistry::new();
+        let h1 = registry.create("shared", 16).unwrap();
+        let h2 = registry.open("shared").unwrap();
+        // The two handles point to the same segment.
+        assert!(Arc::ptr_eq(&h1, &h2));
+
+        h1.lock().unwrap().write(0, b"X").unwrap();
+        let got = h2.lock().unwrap().read(0, 1).unwrap();
+        assert_eq!(got, b"X".to_vec());
+    }
 }
