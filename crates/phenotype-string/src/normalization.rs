@@ -79,4 +79,79 @@ mod tests {
     fn test_to_ascii_lossy() {
         assert_eq!(to_ascii_lossy("café"), "cafe");
     }
+
+    #[test]
+    fn test_nfc_keeps_ascii_unchanged() {
+        assert_eq!(normalize_nfc("hello"), "hello");
+        assert_eq!(normalize_nfc(""), "");
+    }
+
+    #[test]
+    fn test_nfd_decomposes_combining_marks() {
+        let s = "café"; // composed
+        let decomposed = normalize_nfd(s);
+        // NFD should split "é" into "e" + combining acute
+        assert!(decomposed.chars().count() > s.chars().count());
+        assert!(decomposed.contains('\u{0301}'));
+    }
+
+    #[test]
+    fn test_nfkc_compatibility_decomposition() {
+        // "ﬁ" (U+FB01) is a compatibility character that decomposes to "fi"
+        let s = "ﬁ";
+        let result = normalize_nfkc(s);
+        assert_eq!(result, "fi");
+    }
+
+    #[test]
+    fn test_remove_diacritics_empty() {
+        assert_eq!(remove_diacritics(""), "");
+        assert_eq!(remove_diacritics("plain"), "plain");
+    }
+
+    #[test]
+    fn test_to_ascii_lossy_replaces_unknown_with_question() {
+        // Japanese kanji is not in the lossless table.
+        assert_eq!(to_ascii_lossy("日本"), "??");
+    }
+
+    #[test]
+    fn test_to_ascii_lossy_passes_ascii() {
+        assert_eq!(to_ascii_lossy("hello world 123"), "hello world 123");
+    }
+
+    #[test]
+    fn test_to_ascii_lossy_handles_all_known_chars() {
+        assert_eq!(to_ascii_lossy("ñ"), "n");
+        assert_eq!(to_ascii_lossy("ç"), "c");
+        assert_eq!(to_ascii_lossy("í"), "i");
+        assert_eq!(to_ascii_lossy("ó"), "o");
+        assert_eq!(to_ascii_lossy("ú"), "u");
+        assert_eq!(to_ascii_lossy("à"), "a");
+        assert_eq!(to_ascii_lossy("è"), "e");
+        assert_eq!(to_ascii_lossy("ò"), "o");
+        assert_eq!(to_ascii_lossy("ù"), "u");
+    }
+
+    #[test]
+    fn test_normalize_whitespace_collapses_runs() {
+        // Multi-line input: blank lines dropped, each line trimmed, joined with " ".
+        let input = "  hello  \n\n  world  \n  foo  ";
+        let result = normalize_whitespace(input);
+        assert_eq!(result, "hello world foo");
+    }
+
+    #[test]
+    fn test_normalize_whitespace_drops_blank_lines() {
+        let input = "a\n\n\nb\n\nc";
+        let result = normalize_whitespace(input);
+        assert_eq!(result, "a b c");
+    }
+
+    #[test]
+    fn test_normalize_whitespace_empty() {
+        assert_eq!(normalize_whitespace(""), "");
+        assert_eq!(normalize_whitespace("   "), "");
+        assert_eq!(normalize_whitespace("\n\n\n"), "");
+    }
 }

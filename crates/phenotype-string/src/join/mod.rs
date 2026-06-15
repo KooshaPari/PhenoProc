@@ -98,4 +98,66 @@ mod tests {
         builder.append("Hello").append(" ").append("World");
         assert_eq!(builder.build(), "Hello World");
     }
+
+    #[test]
+    fn test_join_empty_slice() {
+        let v: Vec<&str> = vec![];
+        assert_eq!(join(&v, ", "), "");
+    }
+
+    #[test]
+    fn test_join_single_item() {
+        assert_eq!(join(&["only"], ", "), "only");
+    }
+
+    #[test]
+    fn test_join_empty_separator() {
+        assert_eq!(join(&["a", "b", "c"], ""), "abc");
+    }
+
+    #[test]
+    fn test_join_multibyte_separator() {
+        assert_eq!(join(&["a", "b"], " → "), "a → b");
+    }
+
+    #[test]
+    fn test_line_join() {
+        assert_eq!(line_join(&["a", "b", "c"]), "a\nb\nc");
+        assert_eq!(line_join::<&str>(&[]), "");
+    }
+
+    #[test]
+    fn test_comma_join_empty() {
+        let v: Vec<&str> = vec![];
+        assert_eq!(comma_join(&v), "");
+    }
+
+    #[test]
+    fn test_concat_empty() {
+        let v: Vec<&str> = vec![];
+        assert_eq!(concat(&v), "");
+    }
+
+    #[test]
+    fn test_concat_no_separator() {
+        assert_eq!(concat(&["a", "b", "c"]), "abc");
+    }
+
+    #[test]
+    fn test_string_builder_default_is_empty() {
+        let mut b = StringBuilder::default();
+        assert_eq!(b.len(), 0);
+        assert!(b.is_empty());
+        b.append("x");
+        assert_eq!(b.len(), 1);
+        assert!(!b.is_empty());
+    }
+
+    #[test]
+    fn test_string_builder_zero_capacity() {
+        let mut b = StringBuilder::with_capacity(0);
+        b.append("hi");
+        let result = b.build();
+        assert_eq!(result, "hi");
+    }
 }

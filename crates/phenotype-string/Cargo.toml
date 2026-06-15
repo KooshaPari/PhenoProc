@@ -5,10 +5,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "String utilities for the Phenotype ecosystem"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 documentation = "https://docs.rs/phenotype-string"
 keywords = ["phenotype", "pheno-proc", "string"]
 categories = ["text-processing"]
+authors = ["kooshapari"]
 
 [dependencies]
 thiserror = { workspace = true }
