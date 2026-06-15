@@ -13,3 +13,20 @@ impl Default for HttpClient {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_creates_http_client() {
+        let _ = HttpClient::new();
+    }
+
+    #[test]
+    fn default_matches_new() {
+        let a: HttpClient = HttpClient::default();
+        let b = HttpClient::new();
+        let _ = (a, b);
+    }
+}
