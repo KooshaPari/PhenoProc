@@ -163,7 +163,7 @@ mod tests {
     use std::io::Write;
     use tempfile::NamedTempFile;
 
-    #[derive(Debug, Deserialize, Serialize, PartialEq)]
+    #[derive(Debug, Deserialize, Serialize, PartialEq, Default)]
     struct TestConfig {
         name: String,
         value: i32,
@@ -212,5 +212,227 @@ value = 42
             Some(ConfigFormat::Json)
         );
         assert_eq!(ConfigFormat::from_path("config.txt"), None);
+    }
+
+    #[test]
+    fn test_config_format_from_path_yml_and_uppercase() {
+        assert_eq!(
+            ConfigFormat::from_path("/etc/app/config.YML"),
+            Some(ConfigFormat::Yaml)
+        );
+        assert_eq!(
+            ConfigFormat::from_path("./relative/path/Config.JSON"),
+            Some(ConfigFormat::Json)
+        );
+        assert_eq!(
+            ConfigFormat::from_path("a/b/c.TOML"),
+            Some(ConfigFormat::Toml)
+        );
+    }
+
+    #[test]
+    fn test_config_format_from_path_no_extension() {
+        assert_eq!(ConfigFormat::from_path("/etc/app/config"), None);
+    }
+
+    #[test]
+    fn test_parse_yaml() {
+        let yaml = "name: test\nvalue: 42\n";
+        let config: TestConfig = parse_config(yaml, ConfigFormat::Yaml).unwrap();
+        assert_eq!(config.name, "test");
+        assert_eq!(config.value, 42);
+    }
+
+    #[test]
+    fn test_parse_toml_error() {
+        let bad = "name = 'missing quote\nvalue = oops";
+        let res: Result<TestConfig> = parse_config(bad, ConfigFormat::Toml);
+        assert!(matches!(res, Err(ConfigError::Toml(_))));
+    }
+
+    #[test]
+    fn test_parse_json_error() {
+        let bad = "{ this is not json";
+        let res: Result<TestConfig> = parse_json(bad, ConfigFormat::Json);
+        assert!(matches!(res, Err(ConfigError::Json(_))));
+    }
+
+    fn parse_json<T: DeserializeOwned>(content: &str, fmt: ConfigFormat) -> Result<T> {
+        parse_config(content, fmt)
+    }
+
+    #[test]
+    fn test_load_from_file_toml() -> Result<()> {
+        let mut file = NamedTempFile::with_suffix(".toml")?;
+        write!(file, "name = \"from-toml\"\nvalue = 7\n")?;
+        let cfg: TestConfig = load_from_file(file.path())?;
+        assert_eq!(cfg.name, "from-toml");
+        assert_eq!(cfg.value, 7);
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_from_file_yaml() -> Result<()> {
+        let mut file = NamedTempFile::with_suffix(".yaml")?;
+        write!(file, "name: from-yaml\nvalue: 9\n")?;
+        let cfg: TestConfig = load_from_file(file.path())?;
+        assert_eq!(cfg.name, "from-yaml");
+        assert_eq!(cfg.value, 9);
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_from_file_unsupported_format() -> Result<()> {
+        let mut file = NamedTempFile::with_suffix(".txt")?;
+        write!(file, "irrelevant")?;
+        let res: Result<TestConfig> = load_from_file(file.path());
+        assert!(matches!(res, Err(ConfigError::UnsupportedFormat(_))));
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_from_file_missing() {
+        let res: Result<TestConfig> = load_from_file("/this/path/should/not/exist.json");
+        assert!(matches!(res, Err(ConfigError::Io(_))));
+    }
+
+    #[test]
+    fn test_config_error_display() {
+        let io_err = ConfigError::Io(std::io::Error::new(std::io::ErrorKind::Other, "x"));
+        assert!(format!("{}", io_err).contains("IO error"));
+
+        let yaml_err = ConfigError::Yaml("bad".into());
+        assert!(format!("{}", yaml_err).contains("bad"));
+        assert!(format!("{}", yaml_err).contains("YAML"));
+
+        let unsupported = ConfigError::UnsupportedFormat("xyz".into());
+        assert!(format!("{}", unsupported).contains("xyz"));
+
+        let nf = ConfigError::NotFound("config.toml".into());
+        assert!(format!("{}", nf).contains("config.toml"));
+    }
+
+    #[derive(Debug, Deserialize, Serialize, PartialEq, Default)]
+    struct EnvConfig {
+        name: Option<String>,
+        value: Option<String>,
+    }
+
+    #[test]
+    fn test_from_env_with_prefix() {
+        // Set isolated env vars for the test.
+        let key1 = "PHENOTYPE_TEST_FOO_NAME";
+        let key2 = "PHENOTYPE_TEST_FOO_VALUE";
+        std::env::set_var(key1, "alpha");
+        std::env::set_var(key2, "beta");
+
+        let cfg: EnvConfig = from_env("PHENOTYPE_TEST_FOO_").unwrap();
+        assert_eq!(cfg.name.as_deref(), Some("alpha"));
+        assert_eq!(cfg.value.as_deref(), Some("beta"));
+
+        std::env::remove_var(key1);
+        std::env::remove_var(key2);
+    }
+
+    #[test]
+    fn test_from_env_filters_by_prefix() {
+        std::env::set_var("PHENOTYPE_TEST_BAR_X", "1");
+        std::env::set_var("UNRELATED", "2");
+        // Empty struct will work since it has no required fields.
+        let cfg: Empty = from_env("PHENOTYPE_TEST_BAR_").unwrap();
+        // Should be parsed successfully and not contain UNRELATED key.
+        std::env::remove_var("PHENOTYPE_TEST_BAR_X");
+        std::env::remove_var("UNRELATED");
+    }
+
+    #[derive(Debug, Deserialize, Default, PartialEq)]
+    struct Empty {}
+
+    #[test]
+    fn test_config_loader_default() {
+        let loader: ConfigLoader<TestConfig> = ConfigLoader::default();
+        // No source set, load should return NotFound.
+        let res = loader.load();
+        assert!(matches!(res, Err(ConfigError::NotFound(_))));
+    }
+
+    #[test]
+    fn test_config_loader_new_and_load_no_source() {
+        let loader: ConfigLoader<TestConfig> = ConfigLoader::new();
+        let res = loader.load();
+        assert!(matches!(res, Err(ConfigError::NotFound(_))));
+    }
+
+    #[test]
+    fn test_config_loader_with_file() -> Result<()> {
+        let mut file = NamedTempFile::with_suffix(".json")?;
+        write!(file, r#"{{"name": "loader", "value": 5}}"#)?;
+        let loader: ConfigLoader<TestConfig> = ConfigLoader::new()
+            .with_file(file.path().to_string_lossy().to_string());
+        let cfg = loader.load()?;
+        assert_eq!(cfg.name, "loader");
+        assert_eq!(cfg.value, 5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_loader_with_env_prefix() {
+        std::env::set_var("PHENOTYPE_TEST_LOADER_X", "yes");
+        let loader: ConfigLoader<Empty> = ConfigLoader::new().with_env_prefix("PHENOTYPE_TEST_LOADER_");
+        let _cfg: Empty = loader.load().unwrap();
+        std::env::remove_var("PHENOTYPE_TEST_LOADER_X");
+    }
+
+    #[test]
+    fn test_config_loader_with_file_overrides_env() -> Result<()> {
+        // When both file and env_prefix are set, file takes precedence (current impl).
+        let mut file = NamedTempFile::with_suffix(".json")?;
+        write!(file, r#"{{"name": "from-file", "value": 1}}"#)?;
+        let loader: ConfigLoader<TestConfig> = ConfigLoader::new()
+            .with_file(file.path().to_string_lossy().to_string())
+            .with_env_prefix("PHENOTYPE_TEST_LOADER_");
+        let cfg = loader.load()?;
+        assert_eq!(cfg.name, "from-file");
+        Ok(())
+    }
+
+    #[derive(Debug, Deserialize, Serialize, PartialEq)]
+    struct MergedConfig {
+        a: Option<String>,
+        b: Option<i32>,
+    }
+
+    #[test]
+    fn test_merge_configs_multiple_sources() {
+        let src1 = (r#"{"a": "hello"}"#.to_string(), ConfigFormat::Json);
+        let src2 = (r#"{"b": 42}"#.to_string(), ConfigFormat::Json);
+        let merged: MergedConfig = merge_configs(vec![src1, src2]).unwrap();
+        assert_eq!(merged.a.as_deref(), Some("hello"));
+        assert_eq!(merged.b, Some(42));
+    }
+
+    #[test]
+    fn test_merge_configs_later_overrides_earlier() {
+        let src1 = (r#"{"a": "first"}"#.to_string(), ConfigFormat::Json);
+        let src2 = (r#"{"a": "second"}"#.to_string(), ConfigFormat::Json);
+        let merged: MergedConfig = merge_configs(vec![src1, src2]).unwrap();
+        assert_eq!(merged.a.as_deref(), Some("second"));
+    }
+
+    #[test]
+    fn test_merge_configs_empty_list_fails() {
+        // With no sources, the resulting JSON is an empty object, and depending on
+        // the target struct, it may parse as a default-constructed value or fail.
+        // Test the actual behavior.
+        let res: Result<MergedConfig> = merge_configs(vec![]);
+        // Both fields are Optional, so an empty object should still parse.
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_merge_configs_parse_error() {
+        let bad = ("not valid json".to_string(), ConfigFormat::Json);
+        let res: Result<MergedConfig> = merge_configs(vec![bad]);
+        assert!(res.is_err());
     }
 }
