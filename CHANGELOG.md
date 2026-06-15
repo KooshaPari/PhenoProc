@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## 🐛 Bug Fixes
 - Fix: restore and fix PhenoProc workspace crates
 
@@ -89,3 +103,4 @@ Refs: phenotype/repos/tooling/legacy-enforcement/ (`2338174`)
 - Merge: add phenotype-dep-guard crate (`897a795`)
 - Merge: add phenotype-vessel crate from phenoVessel (`75030f6`)
 - Initial: PhenoProc process orchestration registry (`4214bb3`)
+[Unreleased]: https://github.com/KooshaPari/PhenoProc/compare/HEAD

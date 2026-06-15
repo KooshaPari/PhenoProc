@@ -3,7 +3,12 @@ name = "pheno-proc-core"
 version = "0.1.0"
 edition = "2021"
 description = "Process management primitives for PhenoProc registry"
-license = "MIT"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/pheno-proc-core"
+keywords = ["phenotype", "pheno-proc", "core"]
+categories = ["data-structures"]
 
 [dependencies]
 anyhow = "1.0"

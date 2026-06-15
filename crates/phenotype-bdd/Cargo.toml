@@ -2,8 +2,13 @@
 name = "phenotype-bdd"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "BDD testing utilities for Phenotype"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/phenotype-bdd"
+keywords = ["phenotype", "pheno-proc", "bdd"]
+categories = ["development-tools::testing"]
 
 [dependencies]
 serde = { workspace = true }

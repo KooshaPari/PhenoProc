@@ -3,7 +3,12 @@ name = "pheno-proc-queue"
 version = "0.1.0"
 edition = "2021"
 description = "Priority task queue for PhenoProc"
-license = "MIT"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/pheno-proc-queue"
+keywords = ["phenotype", "pheno-proc"]
+categories = ["development-tools"]
 
 [dependencies]
 anyhow = "1.0"

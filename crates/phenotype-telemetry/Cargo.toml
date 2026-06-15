@@ -3,7 +3,13 @@ name = "phenotype-telemetry"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+description = "phenotype telemetry — Phenotype infrastructure crate (PhenoProc)"
+documentation = "https://docs.rs/phenotype-telemetry"
+keywords = ["phenotype", "pheno-proc", "telemetry"]
+categories = ["development-tools::profiling"]
 
 [dependencies]
 serde = { workspace = true }

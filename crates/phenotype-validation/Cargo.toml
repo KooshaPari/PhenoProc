@@ -2,8 +2,13 @@
 name = "phenotype-validation"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "Validation utilities for Phenotype data"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/phenotype-validation"
+keywords = ["phenotype", "pheno-proc", "validation"]
+categories = ["data-structures"]
 
 [dependencies]
 serde = { workspace = true }

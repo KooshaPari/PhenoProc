@@ -2,9 +2,13 @@
 name = "phenotype-config-core"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "Core configuration management for Phenotype"
-repository = "https://github.com/KooshaPari/phenotype-infrakit"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/phenotype-config-core"
+keywords = ["phenotype", "pheno-proc", "config"]
+categories = ["config", "data-structures"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }

@@ -3,7 +3,12 @@ name = "phenotype-validation"
 version = "0.2.0"
 edition = "2021"
 description = "Phenotype.Validation - Schema validation for JSON"
-license = "MIT"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/phenotype-validation"
+keywords = ["phenotype", "pheno-proc", "validation"]
+categories = ["data-structures"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

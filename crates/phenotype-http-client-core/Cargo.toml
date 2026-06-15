@@ -3,7 +3,12 @@ name = "phenotype-http-client-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
-authors.workspace = true
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+description = "phenotype http client core — Phenotype infrastructure crate (PhenoProc)"
+documentation = "https://docs.rs/phenotype-http-client-core"
+keywords = ["phenotype", "pheno-proc", "core"]
+categories = ["data-structures", "network-programming", "command-line-utilities"]
 
 [dependencies]

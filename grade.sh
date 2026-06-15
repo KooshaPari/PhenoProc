@@ -76,7 +76,7 @@ case "$STACK" in
     run_check "doc" "cargo doc --workspace --no-deps" 1
     run_check "test-snapshot" "cargo test --workspace -- snapshot" 1 true
     run_check "test-fuzz" "cargo test --workspace -- fuzz" 1 true
-    run_check "coverage" "cargo llvm-cov --workspace --fail-under-lines 85" 2 true
+    run_check "coverage" "./scripts/coverage.sh" 2 true
     run_check "audit" "cargo audit" 1 true
     run_check "bench" "cargo bench --workspace" 1 true
     ;;

@@ -9,6 +9,11 @@ on:
     - cron: '17 4 * * 2'
   workflow_dispatch:
 
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   analyze:
     name: Analyze (rust)
@@ -22,12 +27,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e
         with:
           languages: rust
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@8aad20d150bbac5944a9f9d289da16a4b0d87c1e
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e
         with:
           category: "/language:rust"

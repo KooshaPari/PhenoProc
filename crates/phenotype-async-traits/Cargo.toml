@@ -2,8 +2,13 @@
 name = "phenotype-async-traits"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "Async traits for phenotype ecosystem"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/phenotype-async-traits"
+keywords = ["phenotype", "pheno-proc", "async"]
+categories = ["asynchronous", "rust-patterns"]
 
 [lib]
 path = "src/lib.rs"

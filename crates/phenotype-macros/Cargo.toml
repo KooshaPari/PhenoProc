@@ -2,9 +2,13 @@
 name = "phenotype-macros"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "Procedural macros for Phenotype"
-repository = "https://github.com/KooshaPari/phenotype-infrakit"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/phenotype-macros"
+keywords = ["phenotype", "pheno-proc", "macros"]
+categories = ["development-tools::procedural-macro-helpers"]
 
 [lib]
 proc-macro = true

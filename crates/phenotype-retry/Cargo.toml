@@ -3,7 +3,13 @@ name = "phenotype-retry"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+description = "phenotype retry — Phenotype infrastructure crate (PhenoProc)"
+documentation = "https://docs.rs/phenotype-retry"
+keywords = ["phenotype", "pheno-proc"]
+categories = ["development-tools"]
 
 [dependencies]
 tokio = { workspace = true }

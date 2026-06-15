@@ -27,3 +27,8 @@ tasks:
       - lefthook install
     status:
       - test -f .git/hooks/lefthook
+
+  coverage:
+    desc: Measure code coverage (auto-detects llvm-cov/llvm-profdata; SSOT: scripts/coverage.sh)
+    cmds:
+      - ./scripts/coverage.sh

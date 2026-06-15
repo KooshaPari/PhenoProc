@@ -2,7 +2,13 @@
 name = "phenotype-cache-adapter"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+description = "phenotype cache adapter — Phenotype infrastructure crate (PhenoProc)"
+documentation = "https://docs.rs/phenotype-cache-adapter"
+keywords = ["phenotype", "pheno-proc", "cache"]
+categories = ["caching"]
 
 [lib]
 path = "src/lib.rs"

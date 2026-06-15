@@ -4,13 +4,13 @@
 name = "clikit"
 version = "0.1.0"
 edition = "2021"
-authors = ["Phenotype Engineering"]
 description = "Universal CLI framework with hexagonal architecture"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/KooshaPari/clikit"
+repository = "https://github.com/KooshaPari/PhenoProc"
 documentation = "https://docs.rs/clikit"
 keywords = ["cli", "framework", "command-line", "hexagonal", "architecture"]
 categories = ["command-line-utilities", "development-tools"]
+authors = ["kooshapari"]
 
 [dependencies]
 # Core domain (no external deps)

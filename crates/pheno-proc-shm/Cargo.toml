@@ -2,9 +2,13 @@
 name = "pheno-proc-shm"
 version = "0.1.0"
 edition = "2021"
-authors = ["Phenotype Team"]
 description = "Shared memory processing for PhenoProc"
-license = "MIT"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/pheno-proc-shm"
+keywords = ["phenotype", "pheno-proc"]
+categories = ["development-tools"]
 
 [dependencies]
 thiserror = "2.0"

@@ -3,8 +3,13 @@ name = "phenotype-mock"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
 description = "Mock testing utilities for Phenotype"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/KooshaPari/PhenoProc"
+authors = ["kooshapari"]
+documentation = "https://docs.rs/phenotype-mock"
+keywords = ["phenotype", "pheno-proc", "mock"]
+categories = ["development-tools::testing"]
 
 [dependencies]
 
