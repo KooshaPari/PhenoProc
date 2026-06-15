@@ -287,4 +287,195 @@ mod tests {
         sm.send("go").unwrap();
         assert_eq!(count.load(Ordering::SeqCst), 1);
     }
+
+    #[test]
+    fn new_state_machine_has_empty_current() {
+        let sm = StateMachine::new();
+        assert_eq!(sm.current(), "");
+        assert!(!sm.is_in("red"));
+        assert!(!sm.is_in("anything"));
+    }
+
+    #[test]
+    fn default_matches_new() {
+        let sm: StateMachine = StateMachine::default();
+        assert_eq!(sm.current(), "");
+    }
+
+    #[test]
+    fn debug_output_contains_struct_name() {
+        let sm = traffic_light();
+        let dbg = format!("{:?}", sm);
+        assert!(dbg.contains("StateMachine"));
+        assert!(dbg.contains("current"));
+    }
+
+    #[test]
+    fn is_in_matches_current_state() {
+        let sm = traffic_light();
+        assert!(sm.is_in("red"));
+        assert!(!sm.is_in("green"));
+        sm.send("next").unwrap();
+        assert!(sm.is_in("green"));
+    }
+
+    #[test]
+    fn can_send_for_guarded_transition() {
+        let sm = StateMachineBuilder::new("a")
+            .guarded_transition("a", "go", "b", |_from, _event| true)
+            .build()
+            .unwrap();
+        assert!(sm.can_send("go"));
+    }
+
+    #[test]
+    fn can_send_for_guarded_transition_false() {
+        let sm = StateMachineBuilder::new("a")
+            .guarded_transition("a", "go", "b", |_from, _event| false)
+            .build()
+            .unwrap();
+        assert!(!sm.can_send("go"));
+    }
+
+    #[test]
+    fn can_send_no_transition_returns_false() {
+        let sm = StateMachineBuilder::new("a")
+            .transition("a", "go", "b")
+            .build()
+            .unwrap();
+        // From "a", only "go" is available; "stop" is not.
+        assert!(!sm.can_send("stop"));
+    }
+
+    #[test]
+    fn available_events_lists_all() {
+        let sm = StateMachineBuilder::new("a")
+            .transition("a", "go", "b")
+            .transition("a", "stay", "a")
+            .transition("b", "back", "a")
+            .build()
+            .unwrap();
+        let from_a = sm.available_events();
+        assert_eq!(from_a.len(), 2);
+        assert!(from_a.contains(&"go".to_string()));
+        assert!(from_a.contains(&"stay".to_string()));
+        sm.send("go").unwrap();
+        let from_b = sm.available_events();
+        assert_eq!(from_b, vec!["back".to_string()]);
+    }
+
+    #[test]
+    fn on_exit_callback_fires() {
+        let count = Arc::new(AtomicUsize::new(0));
+        let c = count.clone();
+        let sm = StateMachineBuilder::new("a")
+            .transition("a", "go", "b")
+            .on_exit("a", move |_| {
+                c.fetch_add(1, Ordering::SeqCst);
+            })
+            .build()
+            .unwrap();
+        sm.send("go").unwrap();
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn on_enter_and_on_exit_both_fire() {
+        let enters = Arc::new(AtomicUsize::new(0));
+        let exits = Arc::new(AtomicUsize::new(0));
+        let e_c = enters.clone();
+        let x_c = exits.clone();
+        let sm = StateMachineBuilder::new("a")
+            .transition("a", "go", "b")
+            .on_enter("b", move |_| {
+                e_c.fetch_add(1, Ordering::SeqCst);
+            })
+            .on_exit("a", move |_| {
+                x_c.fetch_add(1, Ordering::SeqCst);
+            })
+            .build()
+            .unwrap();
+        sm.send("go").unwrap();
+        assert_eq!(enters.load(Ordering::SeqCst), 1);
+        assert_eq!(exits.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn send_returns_new_state() {
+        let sm = traffic_light();
+        let new_state = sm.send("next").unwrap();
+        assert_eq!(new_state, "green");
+    }
+
+    #[test]
+    fn guarded_transition_rejects() {
+        let sm = StateMachineBuilder::new("a")
+            .guarded_transition("a", "go", "b", |_from, _event| false)
+            .build()
+            .unwrap();
+        let err = sm.send("go").unwrap_err();
+        assert!(matches!(err, StateMachineError::GuardRejected { .. }));
+    }
+
+    #[test]
+    fn guarded_transition_allows() {
+        let sm = StateMachineBuilder::new("a")
+            .guarded_transition("a", "go", "b", |_from, _event| true)
+            .build()
+            .unwrap();
+        sm.send("go").unwrap();
+        assert_eq!(sm.current(), "b");
+    }
+
+    #[test]
+    fn error_display_messages() {
+        let e1 = StateMachineError::InvalidTransition {
+            from: "a".into(),
+            event: "x".into(),
+        };
+        assert!(e1.to_string().contains("invalid transition"));
+        assert!(e1.to_string().contains("a"));
+        assert!(e1.to_string().contains("x"));
+        let e2 = StateMachineError::GuardRejected {
+            from: "a".into(),
+            event: "x".into(),
+        };
+        assert!(e2.to_string().contains("rejected by guard"));
+        let e3 = StateMachineError::UnknownState("z".into());
+        assert!(e3.to_string().contains("z"));
+        let e4 = StateMachineError::BuildError("init".into());
+        assert!(e4.to_string().contains("init"));
+    }
+
+    #[test]
+    fn build_with_empty_initial_fails() {
+        let res = StateMachineBuilder::new("").build();
+        assert!(matches!(res, Err(StateMachineError::BuildError(_))));
+    }
+
+    #[test]
+    fn send_event_then_return_to_initial_via_cycle() {
+        let sm = traffic_light();
+        sm.send("next").unwrap();
+        sm.send("next").unwrap();
+        sm.send("next").unwrap();
+        // After red->green->yellow->red we are back at red.
+        assert_eq!(sm.current(), "red");
+    }
+
+    #[test]
+    fn multiple_callbacks_fire_in_order() {
+        let log = Arc::new(std::sync::Mutex::new(Vec::<&'static str>::new()));
+        let l1 = log.clone();
+        let l2 = log.clone();
+        let sm = StateMachineBuilder::new("a")
+            .transition("a", "go", "b")
+            .on_enter("b", move |_| l1.lock().unwrap().push("first"))
+            .on_enter("b", move |_| l2.lock().unwrap().push("second"))
+            .build()
+            .unwrap();
+        sm.send("go").unwrap();
+        let log = log.lock().unwrap();
+        assert_eq!(*log, vec!["first", "second"]);
+    }
 }
