@@ -384,4 +384,216 @@ mod tests {
         let active = adapter.list_active();
         assert_eq!(active.len(), 2);
     }
+
+    #[test]
+    fn test_dedup_filter_with_capacity() {
+        let mut filter = DedupFilter::<String>::with_capacity(16);
+        assert!(filter.is_empty());
+        assert_eq!(filter.len(), 0);
+        assert!(filter.check_and_insert("a".to_string()));
+        assert!(!filter.check_and_insert("a".to_string()));
+        assert_eq!(filter.len(), 1);
+        assert!(!filter.is_empty());
+    }
+
+    #[test]
+    fn test_dedup_filter_clear() {
+        let mut filter = DedupFilter::<i32>::new();
+        filter.check_and_insert(1);
+        filter.check_and_insert(2);
+        assert_eq!(filter.len(), 2);
+        filter.clear();
+        assert!(filter.is_empty());
+        assert!(filter.check_and_insert(1));
+    }
+
+    #[test]
+    fn test_dedup_filter_default() {
+        let mut filter: DedupFilter<u32> = DedupFilter::default();
+        assert!(filter.is_empty());
+        assert!(filter.check_and_insert(7));
+    }
+
+    #[test]
+    fn test_bloom_filter_check_and_add() {
+        let mut filter = BloomFilter::new(1024, 4);
+        let a = b"alpha";
+        let b = b"beta";
+
+        assert!(!filter.check_and_add(a)); // first time, doesn't exist
+        assert!(filter.check_and_add(a)); // second time, already present
+        assert!(!filter.check_and_add(b));
+    }
+
+    #[test]
+    fn test_bloom_filter_no_false_negatives() {
+        let mut filter = BloomFilter::new(2048, 3);
+        let items: Vec<Vec<u8>> = (0..50).map(|i| format!("item-{}", i).into_bytes()).collect();
+        for item in &items {
+            filter.add(item);
+        }
+        for item in &items {
+            assert!(filter.check(item), "bloom check should never false-negative");
+        }
+    }
+
+    #[test]
+    fn test_lock_status_display() {
+        assert_eq!(LockStatus::Locked.to_string(), "locked");
+        assert_eq!(LockStatus::Released.to_string(), "released");
+        assert_eq!(LockStatus::Expired.to_string(), "expired");
+    }
+
+    #[test]
+    fn test_command_lock_new_defaults() {
+        let lock = CommandLock::new("hash".to_string(), 42, Some("/tmp/out".to_string()));
+        assert_eq!(lock.cmd_hash, "hash");
+        assert_eq!(lock.pid, 42);
+        assert_eq!(lock.output_path, Some("/tmp/out".to_string()));
+        assert_eq!(lock.status, LockStatus::Locked);
+        assert!(lock.expires_at.is_none());
+        assert!(lock.is_locked());
+    }
+
+    #[test]
+    fn test_command_lock_with_expiry() {
+        let lock = CommandLock::new("h".to_string(), 1, None).with_expiry(Duration::from_secs(60));
+        assert!(lock.expires_at.is_some());
+        assert!(lock.is_locked());
+    }
+
+    #[test]
+    fn test_command_lock_is_locked_when_expired() {
+        let mut lock = CommandLock::new("h".to_string(), 1, None);
+        lock.expires_at = Some(Instant::now() - Duration::from_secs(1));
+        assert!(!lock.is_locked());
+    }
+
+    #[test]
+    fn test_command_lock_is_locked_released_status() {
+        let mut lock = CommandLock::new("h".to_string(), 1, None);
+        lock.status = LockStatus::Released;
+        assert!(!lock.is_locked());
+    }
+
+    #[test]
+    fn test_command_lock_acquire_resets_state() {
+        let mut lock = CommandLock::new("h".to_string(), 1, None);
+        lock.status = LockStatus::Released;
+        lock.acquire(99, Some("/tmp/x".to_string()));
+        assert_eq!(lock.pid, 99);
+        assert_eq!(lock.output_path, Some("/tmp/x".to_string()));
+        assert_eq!(lock.status, LockStatus::Locked);
+        assert!(lock.is_locked());
+    }
+
+    #[test]
+    fn test_command_lock_release_wrong_pid() {
+        let mut lock = CommandLock::new("h".to_string(), 1, None);
+        let res = lock.release(2);
+        assert!(res.is_err());
+        // Status should be unchanged.
+        assert_eq!(lock.status, LockStatus::Locked);
+    }
+
+    #[test]
+    fn test_in_memory_lock_with_ttl() {
+        let adapter = InMemoryLockAdapter::with_ttl(Duration::from_secs(10));
+        let lock = adapter.acquire("c", 1, None).unwrap();
+        assert!(lock.expires_at.is_some());
+    }
+
+    #[test]
+    fn test_in_memory_lock_default() {
+        let adapter = InMemoryLockAdapter::default();
+        let lock = adapter.acquire("c", 1, None).unwrap();
+        assert!(lock.is_locked());
+    }
+
+    #[test]
+    fn test_in_memory_lock_get_missing() {
+        let adapter = InMemoryLockAdapter::new();
+        assert!(adapter.get("missing").is_none());
+    }
+
+    #[test]
+    fn test_in_memory_lock_release_missing() {
+        let adapter = InMemoryLockAdapter::new();
+        let res = adapter.release("missing", 1);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_in_memory_lock_release_wrong_pid() {
+        let adapter = InMemoryLockAdapter::new();
+        adapter.acquire("c", 1, None).unwrap();
+        let res = adapter.release("c", 2);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_in_memory_lock_reacquire_after_release_different_pid() {
+        let adapter = InMemoryLockAdapter::new();
+        adapter.acquire("c", 1, None).unwrap();
+        adapter.release("c", 1).unwrap();
+
+        // Different process can take it over.
+        let lock = adapter.acquire("c", 2, None).unwrap();
+        assert_eq!(lock.pid, 2);
+    }
+
+    #[test]
+    fn test_in_memory_lock_reacquire_when_expired() {
+        let adapter = InMemoryLockAdapter::with_ttl(Duration::from_millis(1));
+        adapter.acquire("c", 1, None).unwrap();
+        // Wait for expiration
+        std::thread::sleep(Duration::from_millis(20));
+        // A different process should now succeed because the previous lock is expired.
+        let lock = adapter.acquire("c", 2, None).unwrap();
+        assert_eq!(lock.pid, 2);
+    }
+
+    #[test]
+    fn test_in_memory_lock_list_all() {
+        let adapter = InMemoryLockAdapter::new();
+        adapter.acquire("c1", 1, None).unwrap();
+        adapter.acquire("c2", 2, None).unwrap();
+        adapter.release("c1", 1).unwrap();
+
+        let all = adapter.list_all();
+        assert_eq!(all.len(), 2);
+
+        let active = adapter.list_active();
+        assert_eq!(active.len(), 1);
+    }
+
+    #[test]
+    fn test_in_memory_lock_cleanup_expired() {
+        let adapter = InMemoryLockAdapter::with_ttl(Duration::from_millis(1));
+        adapter.acquire("c1", 1, None).unwrap();
+        adapter.acquire("c2", 2, None).unwrap();
+        std::thread::sleep(Duration::from_millis(20));
+
+        let removed = adapter.cleanup_expired();
+        assert_eq!(removed, 2);
+        assert!(adapter.list_all().is_empty());
+    }
+
+    #[test]
+    fn test_in_memory_lock_cleanup_expired_keeps_active() {
+        let adapter = InMemoryLockAdapter::with_ttl(Duration::from_secs(60));
+        adapter.acquire("c1", 1, None).unwrap();
+        let removed = adapter.cleanup_expired();
+        assert_eq!(removed, 0);
+        assert_eq!(adapter.list_all().len(), 1);
+    }
+
+    #[test]
+    fn test_in_memory_lock_clear() {
+        let adapter = InMemoryLockAdapter::new();
+        adapter.acquire("c1", 1, None).unwrap();
+        adapter.acquire("c2", 2, None).unwrap();
+        adapter.clear();
+        assert!(adapter.list_all().is_empty());
+    }
 }
