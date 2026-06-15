@@ -67,3 +67,76 @@ pub enum FieldType {
     Array(Box<FieldType>),
     Object(Box<Schema>),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn schema_new_is_empty() {
+        let s: Schema = Schema::new();
+        // Validate an empty map against the empty schema — should pass.
+        let data: HashMap<String, serde_json::Value> = HashMap::new();
+        assert!(s.validate(&data).is_ok());
+    }
+
+    #[test]
+    fn schema_default_matches_new() {
+        let a: Schema = Schema::default();
+        let b: Schema = Schema::new();
+        // Both have no required fields and no field metadata, so they validate
+        // the same input identically.
+        let data: HashMap<String, serde_json::Value> = HashMap::new();
+        assert!(a.validate(&data).is_ok());
+        assert!(b.validate(&data).is_ok());
+    }
+
+    #[test]
+    fn schema_with_field_and_required_validates() {
+        let s: Schema = Schema::new()
+            .with_field("name", FieldType::String)
+            .with_field("age", FieldType::Integer)
+            .with_required("name");
+        let mut data = HashMap::new();
+        data.insert("name".to_string(), json!("alice"));
+        assert!(s.validate(&data).is_ok());
+    }
+
+    #[test]
+    fn schema_missing_required_field_errors() {
+        let s: Schema = Schema::new()
+            .with_field("name", FieldType::String)
+            .with_required("name");
+        let data: HashMap<String, serde_json::Value> = HashMap::new();
+        let err = s.validate(&data).unwrap_err();
+        match err {
+            SchemaValidationError::MissingField(f) => assert_eq!(f, "name"),
+            other => panic!("unexpected error: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn schema_validation_error_display() {
+        let m = SchemaValidationError::MissingField("x".into());
+        assert_eq!(m.to_string(), "Missing required field: x");
+        let t = SchemaValidationError::InvalidType("y".into());
+        assert_eq!(t.to_string(), "Invalid type for field: y");
+        let fe = SchemaValidationError::FieldError("z".into(), "too short".into());
+        assert_eq!(fe.to_string(), "Field validation failed: z - too short");
+    }
+
+    #[test]
+    fn schema_validate_multiple_required() {
+        let s: Schema = Schema::new()
+            .with_field("a", FieldType::String)
+            .with_field("b", FieldType::Integer)
+            .with_required("a")
+            .with_required("b");
+        let mut data = HashMap::new();
+        data.insert("a".to_string(), json!("hello"));
+        // b is missing
+        let err = s.validate(&data).unwrap_err();
+        assert!(matches!(err, SchemaValidationError::MissingField(ref f) if f == "b"));
+    }
+}
