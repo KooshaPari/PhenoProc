@@ -1,5 +1,5 @@
-# EditorConfig is awesome: https://EditorConfig.org
-
+# EditorConfig — Phenotype org canonical
+# https://editorconfig.org
 root = true
 
 [*]
@@ -7,31 +7,49 @@ charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
-
-[*.{py,pyi}]
-indent_style = space
-indent_size = 4
-max_line_length = 120
-
-[*.{ts,tsx,js,jsx,mjs,cjs}]
 indent_style = space
 indent_size = 2
 
+# Rust — 2-space style
+[*.rs]
+indent_size = 2
+max_line_length = 100
+
+# TOML
+[*.toml]
+indent_size = 2
+
+# Python — keep 4-space convention
+[*.{py,pyi}]
+indent_size = 4
+max_line_length = 100
+
+# Go — must use tabs
 [*.go]
 indent_style = tab
 indent_size = 4
 
-[*.{yml,yaml}]
-indent_style = space
+# TypeScript / JavaScript
+[*.{ts,tsx,js,jsx,mjs,cjs}]
 indent_size = 2
 
-[*.{json,jsonc}]
-indent_style = space
+# YAML / JSON
+[*.{yml,yaml,json,jsonc}]
 indent_size = 2
 
+# Shell scripts
+[*.{sh,bash,zsh}]
+indent_size = 2
+
+# Markdown — trailing spaces = hard line break
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = 120
+
+# Makefile — must use tabs
 [Makefile]
 indent_style = tab
 
-[*.md]
+# Diff / patch — keep context whitespace intact
+[*.{diff,patch}]
 trim_trailing_whitespace = false
-max_line_length = off
