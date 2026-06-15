@@ -15,3 +15,21 @@ impl Fixture<TestData> for TestData {
         TestData
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_data_fixture_create() {
+        let _ = <TestData as Fixture<TestData>>::create();
+    }
+
+    #[test]
+    fn test_data_is_clone_and_debug() {
+        let a = TestData;
+        let b = a.clone();
+        let dbg = format!("{:?}", b);
+        assert!(dbg.contains("TestData"));
+    }
+}
