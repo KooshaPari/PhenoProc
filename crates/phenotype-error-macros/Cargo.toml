@@ -6,10 +6,10 @@ rust-version.workspace = true
 description = "Procedural macros for Phenotype error types"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 documentation = "https://docs.rs/phenotype-error-macros"
 keywords = ["phenotype", "pheno-proc", "error"]
 categories = ["rust-patterns", "development-tools::procedural-macro-helpers"]
+authors = ["kooshapari"]
 
 [lib]
 proc-macro = true
