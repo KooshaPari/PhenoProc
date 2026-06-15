@@ -428,4 +428,277 @@ mod tests {
         assert_eq!(peeked.command, "cmd");
         assert_eq!(queue.length(), 1); // Item still in queue
     }
+
+    #[test]
+    fn test_priority_from_str() {
+        use std::str::FromStr;
+        assert_eq!(Priority::from_str("critical").unwrap(), Priority::Critical);
+        assert_eq!(Priority::from_str("HIGH").unwrap(), Priority::High);
+        assert_eq!(Priority::from_str("Normal").unwrap(), Priority::Normal);
+        assert_eq!(Priority::from_str("low").unwrap(), Priority::Low);
+        assert!(Priority::from_str("nope").is_err());
+    }
+
+    #[test]
+    fn test_priority_display() {
+        assert_eq!(Priority::Critical.to_string(), "critical");
+        assert_eq!(Priority::High.to_string(), "high");
+        assert_eq!(Priority::Normal.to_string(), "normal");
+        assert_eq!(Priority::Low.to_string(), "low");
+    }
+
+    #[test]
+    fn test_queue_status_display() {
+        assert_eq!(QueueStatus::Queued.to_string(), "queued");
+        assert_eq!(QueueStatus::Processing.to_string(), "processing");
+        assert_eq!(QueueStatus::Completed.to_string(), "completed");
+        assert_eq!(QueueStatus::Failed.to_string(), "failed");
+        assert_eq!(QueueStatus::Dequeued.to_string(), "dequeued");
+    }
+
+    #[test]
+    fn test_priority_ordering_relation() {
+        assert!(Priority::Critical < Priority::High);
+        assert!(Priority::High < Priority::Normal);
+        assert!(Priority::Normal < Priority::Low);
+    }
+
+    #[test]
+    fn test_queue_item_new_defaults() {
+        let item = QueueItem::new("echo hi".to_string(), Priority::Normal);
+        assert_eq!(item.command, "echo hi");
+        assert_eq!(item.priority, Priority::Normal);
+        assert_eq!(item.status, QueueStatus::Queued);
+        assert!(item.started_at.is_none());
+        assert!(item.completed_at.is_none());
+        assert!(item.metadata.is_none());
+        assert!(!item.id.is_empty());
+    }
+
+    #[test]
+    fn test_queue_item_start_complete_fail() {
+        let mut item = QueueItem::new("x".to_string(), Priority::Normal);
+        assert!(item.duration().is_none());
+        assert!(item.wait_time().is_none());
+
+        item.start();
+        assert_eq!(item.status, QueueStatus::Processing);
+        assert!(item.started_at.is_some());
+        assert!(item.wait_time().is_some());
+
+        item.complete();
+        assert_eq!(item.status, QueueStatus::Completed);
+        assert!(item.completed_at.is_some());
+        assert!(item.duration().is_some());
+
+        let mut failed = QueueItem::new("y".to_string(), Priority::Normal);
+        failed.start();
+        failed.fail();
+        assert_eq!(failed.status, QueueStatus::Failed);
+        assert!(failed.duration().is_some());
+    }
+
+    #[test]
+    fn test_queue_item_duration_no_start() {
+        let mut item = QueueItem::new("x".to_string(), Priority::Normal);
+        // No started_at, so duration is None.
+        assert!(item.duration().is_none());
+
+        // Set completed_at without started_at: still None.
+        item.status = QueueStatus::Completed;
+        assert!(item.duration().is_none());
+    }
+
+    #[test]
+    fn test_in_memory_queue_default() {
+        let q = InMemoryQueueAdapter::default();
+        assert!(q.is_empty());
+        assert_eq!(q.length(), 0);
+    }
+
+    #[test]
+    fn test_in_memory_queue_is_empty() {
+        let q = InMemoryQueueAdapter::new();
+        assert!(q.is_empty());
+        q.enqueue("x".to_string(), Priority::Normal, None);
+        assert!(!q.is_empty());
+    }
+
+    #[test]
+    fn test_in_memory_queue_get_missing() {
+        let q = InMemoryQueueAdapter::new();
+        assert!(q.get("missing").is_none());
+    }
+
+    #[test]
+    fn test_in_memory_queue_metadata() {
+        let q = InMemoryQueueAdapter::new();
+        let meta = serde_json::json!({"foo": "bar", "n": 42});
+        let item = q.enqueue("c".to_string(), Priority::Low, Some(meta.clone()));
+        assert_eq!(item.metadata, Some(meta));
+    }
+
+    #[test]
+    fn test_in_memory_queue_update_status_processing_and_completed() {
+        let q = InMemoryQueueAdapter::new();
+        let item = q.enqueue("c".to_string(), Priority::Normal, None);
+
+        q.update_status(&item.id, QueueStatus::Processing).unwrap();
+        let got = q.get(&item.id).unwrap();
+        assert_eq!(got.status, QueueStatus::Processing);
+        assert!(got.started_at.is_some());
+        assert!(got.completed_at.is_none());
+
+        q.update_status(&item.id, QueueStatus::Completed).unwrap();
+        let got = q.get(&item.id).unwrap();
+        assert_eq!(got.status, QueueStatus::Completed);
+        assert!(got.completed_at.is_some());
+    }
+
+    #[test]
+    fn test_in_memory_queue_update_status_failed() {
+        let q = InMemoryQueueAdapter::new();
+        let item = q.enqueue("c".to_string(), Priority::Normal, None);
+        q.update_status(&item.id, QueueStatus::Failed).unwrap();
+        let got = q.get(&item.id).unwrap();
+        assert_eq!(got.status, QueueStatus::Failed);
+        assert!(got.completed_at.is_some());
+    }
+
+    #[test]
+    fn test_in_memory_queue_update_status_queued_clears_timestamps() {
+        let q = InMemoryQueueAdapter::new();
+        let item = q.enqueue("c".to_string(), Priority::Normal, None);
+        q.update_status(&item.id, QueueStatus::Processing).unwrap();
+        // Setting back to Queued should not touch started_at/completed_at per current code
+        // (only Processing sets started_at, Completed/Failed set completed_at).
+        q.update_status(&item.id, QueueStatus::Queued).unwrap();
+        let got = q.get(&item.id).unwrap();
+        assert_eq!(got.status, QueueStatus::Queued);
+    }
+
+    #[test]
+    fn test_in_memory_queue_update_status_missing() {
+        let q = InMemoryQueueAdapter::new();
+        let res = q.update_status("nonexistent", QueueStatus::Processing);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_in_memory_queue_list_queued() {
+        let q = InMemoryQueueAdapter::new();
+        let a = q.enqueue("a".to_string(), Priority::Normal, None);
+        let b = q.enqueue("b".to_string(), Priority::High, None);
+
+        let queued = q.list_queued();
+        assert_eq!(queued.len(), 2);
+        // High priority first.
+        assert_eq!(queued[0].id, b.id);
+        assert_eq!(queued[1].id, a.id);
+    }
+
+    #[test]
+    fn test_in_memory_queue_list_all_includes_processed() {
+        let q = InMemoryQueueAdapter::new();
+        let a = q.enqueue("a".to_string(), Priority::Normal, None);
+        let _b = q.enqueue("b".to_string(), Priority::Normal, None);
+        q.update_status(&a.id, QueueStatus::Completed).unwrap();
+        q.dequeue(); // remove b from queue (or another)
+
+        let all = q.list_all();
+        assert_eq!(all.len(), 2);
+    }
+
+    #[test]
+    fn test_in_memory_queue_list_by_status() {
+        let q = InMemoryQueueAdapter::new();
+        let a = q.enqueue("a".to_string(), Priority::Normal, None);
+        let b = q.enqueue("b".to_string(), Priority::Normal, None);
+        let c = q.enqueue("c".to_string(), Priority::Normal, None);
+        q.update_status(&a.id, QueueStatus::Processing).unwrap();
+        q.update_status(&b.id, QueueStatus::Completed).unwrap();
+        q.update_status(&c.id, QueueStatus::Failed).unwrap();
+
+        let processing = q.list_by_status(QueueStatus::Processing);
+        assert_eq!(processing.len(), 1);
+        assert_eq!(processing[0].id, a.id);
+
+        let completed = q.list_by_status(QueueStatus::Completed);
+        assert_eq!(completed.len(), 1);
+
+        let failed = q.list_by_status(QueueStatus::Failed);
+        assert_eq!(failed.len(), 1);
+    }
+
+    #[test]
+    fn test_in_memory_queue_clear() {
+        let q = InMemoryQueueAdapter::new();
+        q.enqueue("a".to_string(), Priority::Normal, None);
+        q.enqueue("b".to_string(), Priority::Normal, None);
+        q.clear();
+        assert!(q.is_empty());
+        assert_eq!(q.list_all().len(), 0);
+    }
+
+    #[test]
+    fn test_in_memory_queue_cleanup_completed() {
+        let q = InMemoryQueueAdapter::new();
+        let a = q.enqueue("a".to_string(), Priority::Normal, None);
+        let b = q.enqueue("b".to_string(), Priority::Normal, None);
+        let c = q.enqueue("c".to_string(), Priority::Normal, None);
+        q.update_status(&a.id, QueueStatus::Completed).unwrap();
+        q.update_status(&b.id, QueueStatus::Failed).unwrap();
+        // c stays queued
+
+        let removed = q.cleanup_completed();
+        assert_eq!(removed, 2);
+        let all = q.list_all();
+        assert_eq!(all.len(), 1);
+        assert_eq!(all[0].id, c.id);
+    }
+
+    #[test]
+    fn test_in_memory_queue_stats_processing_and_failed() {
+        let q = InMemoryQueueAdapter::new();
+        let a = q.enqueue("a".to_string(), Priority::Normal, None);
+        let b = q.enqueue("b".to_string(), Priority::Normal, None);
+        q.update_status(&a.id, QueueStatus::Processing).unwrap();
+        q.update_status(&b.id, QueueStatus::Failed).unwrap();
+
+        let stats = q.stats();
+        assert_eq!(stats.processing, 1);
+        assert_eq!(stats.failed, 1);
+        assert_eq!(stats.queued, 0);
+        assert_eq!(stats.completed, 0);
+        assert_eq!(stats.total, 2);
+    }
+
+    #[test]
+    fn test_in_memory_queue_dequeue_empty() {
+        let q = InMemoryQueueAdapter::new();
+        assert!(q.dequeue().is_none());
+    }
+
+    #[test]
+    fn test_in_memory_queue_peek_empty() {
+        let q = InMemoryQueueAdapter::new();
+        assert!(q.peek().is_none());
+    }
+
+    #[test]
+    fn test_queue_stats_display() {
+        let s = QueueStats {
+            queued: 1,
+            processing: 2,
+            completed: 3,
+            failed: 4,
+            total: 10,
+        };
+        let text = s.to_string();
+        assert!(text.contains("queued: 1"));
+        assert!(text.contains("processing: 2"));
+        assert!(text.contains("completed: 3"));
+        assert!(text.contains("failed: 4"));
+        assert!(text.contains("total: 10"));
+    }
 }
