@@ -192,4 +192,155 @@ mod tests {
         let results = registry.search("alpha");
         assert_eq!(results.len(), 1);
     }
+
+    #[test]
+    fn project_new_uses_id_and_name() {
+        let p = Project::new("id1", "name1");
+        assert_eq!(p.id, "id1");
+        assert_eq!(p.name, "name1");
+        assert_eq!(p.version, "0.1.0");
+        assert!(p.description.is_empty());
+        assert!(p.path.is_empty());
+        assert!(p.tags.is_empty());
+        assert!(p.metadata.is_empty());
+    }
+
+    #[test]
+    fn project_with_description_and_version() {
+        let p = Project::new("i", "n")
+            .with_description("d")
+            .with_version("2.0.0");
+        assert_eq!(p.description, "d");
+        assert_eq!(p.version, "2.0.0");
+    }
+
+    #[test]
+    fn project_with_path() {
+        let p = Project::new("i", "n").with_path("/tmp/x");
+        assert_eq!(p.path, "/tmp/x");
+    }
+
+    #[test]
+    fn project_with_multiple_tags() {
+        let p = Project::new("i", "n")
+            .with_tag("a")
+            .with_tag("b")
+            .with_tag("c");
+        assert_eq!(p.tags, vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn project_with_metadata() {
+        let p = Project::new("i", "n").with_metadata("k1", "v1").with_metadata("k2", "v2");
+        assert_eq!(p.metadata.get("k1"), Some(&"v1".to_string()));
+        assert_eq!(p.metadata.get("k2"), Some(&"v2".to_string()));
+    }
+
+    #[test]
+    fn registry_default_is_empty() {
+        let r: ProjectRegistry = ProjectRegistry::default();
+        assert_eq!(r.count(), 0);
+        assert!(r.list().is_empty());
+    }
+
+    #[test]
+    fn registry_get_missing_returns_none() {
+        let r = ProjectRegistry::new();
+        assert!(r.get("missing").is_none());
+    }
+
+    #[test]
+    fn registry_remove_existing_and_missing() {
+        let mut r = ProjectRegistry::new();
+        r.register(Project::new("p1", "n1"));
+        let removed = r.remove("p1");
+        assert!(removed.is_some());
+        assert_eq!(r.count(), 0);
+        // Removing again returns None.
+        assert!(r.remove("p1").is_none());
+    }
+
+    #[test]
+    fn registry_register_overwrites() {
+        let mut r = ProjectRegistry::new();
+        r.register(Project::new("p1", "first"));
+        r.register(Project::new("p1", "second"));
+        assert_eq!(r.count(), 1);
+        assert_eq!(r.get("p1").unwrap().name, "second");
+    }
+
+    #[test]
+    fn registry_list_returns_all() {
+        let r = RegistryBuilder::new()
+            .with_project(Project::new("p1", "a"))
+            .with_project(Project::new("p2", "b"))
+            .with_project(Project::new("p3", "c"))
+            .build();
+        assert_eq!(r.list().len(), 3);
+    }
+
+    #[test]
+    fn registry_find_by_tag_filters() {
+        let r = RegistryBuilder::new()
+            .with_project(Project::new("p1", "a").with_tag("rust"))
+            .with_project(Project::new("p2", "b").with_tag("python"))
+            .with_project(Project::new("p3", "c").with_tag("rust"))
+            .build();
+        let rust_projects = r.find_by_tag("rust");
+        assert_eq!(rust_projects.len(), 2);
+        let python_projects = r.find_by_tag("python");
+        assert_eq!(python_projects.len(), 1);
+        assert!(r.find_by_tag("nonexistent").is_empty());
+    }
+
+    #[test]
+    fn registry_search_matches_name_and_description() {
+        let r = RegistryBuilder::new()
+            .with_project(Project::new("p1", "Alpha").with_description("fast search"))
+            .with_project(Project::new("p2", "Beta"))
+            .build();
+        let by_name = r.search("alpha");
+        assert_eq!(by_name.len(), 1);
+        let by_desc = r.search("search");
+        assert_eq!(by_desc.len(), 1);
+        let no_match = r.search("xyz");
+        assert!(no_match.is_empty());
+    }
+
+    #[test]
+    fn registry_search_is_case_insensitive() {
+        let r = RegistryBuilder::new()
+            .with_project(Project::new("p1", "AlphaProject"))
+            .build();
+        assert_eq!(r.search("alphaproject").len(), 1);
+        assert_eq!(r.search("ALPHAPROJECT").len(), 1);
+    }
+
+    #[test]
+    fn registry_serde_roundtrip() {
+        let mut r = ProjectRegistry::new();
+        r.register(Project::new("p1", "n").with_tag("t").with_metadata("k", "v"));
+        let json = r.to_json().unwrap();
+        let back = ProjectRegistry::from_json(&json).unwrap();
+        assert_eq!(back.count(), 1);
+        assert_eq!(back.get("p1").unwrap().tags, vec!["t".to_string()]);
+        assert_eq!(
+            back.get("p1").unwrap().metadata.get("k"),
+            Some(&"v".to_string())
+        );
+    }
+
+    #[test]
+    fn registry_from_json_error() {
+        let bad = "{ not valid json";
+        let res: Result<ProjectRegistry, _> = ProjectRegistry::from_json(bad);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn builder_new_is_empty() {
+        let b: RegistryBuilder = RegistryBuilder::new();
+        let r = b.build();
+        assert_eq!(r.count(), 0);
+    }
 }
