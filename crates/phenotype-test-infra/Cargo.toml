@@ -5,10 +5,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Test infrastructure for Phenotype"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 documentation = "https://docs.rs/phenotype-test-infra"
 keywords = ["phenotype", "pheno-proc", "test"]
 categories = ["development-tools::testing", "development-tools"]
+authors = ["kooshapari"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }

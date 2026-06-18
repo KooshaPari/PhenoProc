@@ -5,10 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 description = "phenotype event bus — Phenotype infrastructure crate (PhenoProc)"
 documentation = "https://docs.rs/phenotype-event-bus"
 keywords = ["phenotype", "pheno-proc", "event-bus"]
 categories = ["asynchronous"]
+authors = ["kooshapari"]
 
 [dependencies]

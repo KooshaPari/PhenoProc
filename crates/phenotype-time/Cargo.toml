@@ -5,11 +5,11 @@ edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 description = "phenotype time — Phenotype infrastructure crate (PhenoProc)"
 documentation = "https://docs.rs/phenotype-time"
 keywords = ["phenotype", "pheno-proc", "time"]
 categories = ["date-and-time"]
+authors = ["kooshapari"]
 
 [dependencies]
 chrono = { workspace = true }

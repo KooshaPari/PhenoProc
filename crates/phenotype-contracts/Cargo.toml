@@ -5,10 +5,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Contract definitions for Phenotype"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 documentation = "https://docs.rs/phenotype-contracts"
 keywords = ["phenotype", "pheno-proc", "contract"]
 categories = ["development-tools"]
+authors = ["kooshapari"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }

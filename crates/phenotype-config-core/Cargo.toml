@@ -5,10 +5,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Core configuration management for Phenotype"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 documentation = "https://docs.rs/phenotype-config-core"
 keywords = ["phenotype", "pheno-proc", "config"]
 categories = ["config", "data-structures"]
+authors = ["kooshapari"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }

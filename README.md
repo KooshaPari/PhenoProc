@@ -117,3 +117,12 @@ MIT — see [LICENSE](./LICENSE).
 ## Governance
 
 Governance, contribution guidelines, and agent operating contract in `CLAUDE.md` and `AGENTS.md`. Functional requirements and FR-to-test traceability in `docs/FUNCTIONAL_REQUIREMENTS.md`.
+
+## Documentation
+
+This repository includes the following cross-cutting documents:
+
+- [`AGENTS.md`](AGENTS.md) — operating instructions for AI agents and human contributors
+- [`SPEC.md`](SPEC.md) — formal specification of behavior and contracts
+- [`docs/`](docs/) — design notes, ADRs, and supporting documentation (see [`docs/index.md`](docs/index.md))
+

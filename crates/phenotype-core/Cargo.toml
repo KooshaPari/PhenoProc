@@ -6,10 +6,10 @@ rust-version.workspace = true
 description = "Umbrella crate re-exporting all common phenotype crates"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 documentation = "https://docs.rs/phenotype-core"
 keywords = ["phenotype", "pheno-proc", "core"]
 categories = ["data-structures"]
+authors = ["kooshapari"]
 
 [dependencies]
 # Error handling

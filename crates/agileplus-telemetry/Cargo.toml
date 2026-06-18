@@ -5,11 +5,11 @@ edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 description = "agileplus telemetry — Phenotype infrastructure crate (PhenoProc)"
 documentation = "https://docs.rs/agileplus-telemetry"
 keywords = ["phenotype", "pheno-proc", "telemetry"]
 categories = ["development-tools::profiling"]
+authors = ["kooshapari"]
 
 [dependencies]
 agileplus-domain = { path = "../agileplus-domain" }

@@ -5,10 +5,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Core error types for Phenotype"
 repository = "https://github.com/KooshaPari/PhenoProc"
-authors = ["kooshapari"]
 documentation = "https://docs.rs/phenotype-error-core"
 keywords = ["phenotype", "pheno-proc", "error"]
 categories = ["rust-patterns", "data-structures"]
+authors = ["kooshapari"]
 
 [dependencies]
 thiserror = { workspace = true }
