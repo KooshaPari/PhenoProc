@@ -81,5 +81,5 @@ reqwest = { version = "0.12", default-features = false, features = ["json"] }
 proc-macro2 = "1"
 quote = "1"
 dashmap = "6.1"
-ulid = "1.1"
+ulid = "3.0"
 tempfile = "3"
