@@ -77,7 +77,7 @@ phenotype-project-registry = { path = "crates/phenotype-project-registry" }
 phenotype-mock = { path = "crates/phenotype-mock" }
 phenotype-error-macros = { path = "crates/phenotype-error-macros" }
 regex = "1"
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
 proc-macro2 = "1"
 quote = "1"
 dashmap = "6.1"
