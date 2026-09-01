@@ -9,6 +9,8 @@
 
 **Status:** maintenance
 
+[![AI slop inside](https://sladge.net/badge.svg)](https://sladge.net) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/KooshaPari/PhenoProc/total)](https://github.com/KooshaPari/PhenoProc/releases)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/KooshaPari/PhenoProc/actions/workflows/ci.yml/badge.svg)](https://github.com/KooshaPari/PhenoProc/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
